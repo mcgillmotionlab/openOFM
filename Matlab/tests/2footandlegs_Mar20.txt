@@ -1,0 +1,964 @@
+{* A model to combine VCM information and foot model kinematics, based on 
+   work by Richard Baker, and original work by Julian Morris
+   Foot Model based on code developed by Melissa Carson and Marian Harrington, November 1997
+ 
+   Modified by Julie Stebbins (30/07/2003) 
+   Modified to be less reliant on CPEG marker - changed definition of dummy hindfoot (30/07/03) 
+   Modified to change definition of hindfoot axes (30/07/03) 
+   Modified to make hind foot flat default setting with option for hind foot not flat
+   Modified to make mid D1/D5 option for forefoot alignment (toe marker default)
+   Modified to calculate foot progression angle using toe marker and mid D1/D5 (13/08/03) 
+   Modified to calculate forefoot using markers on lateral aspect only - not 1st metatarsal (13/08/03)
+   Calculation of arch height included (14/08/03)
+   Modified to calculate tibia z axis from ankle joint center to knee joint center (14/08/03) 
+   Modified to allow ProxFF factor to be input according to whether toe marker or mid D1/D5 used (02/07/2004)
+   Modified to allow simultaneous calculation of 2 feet (12/12/2005) 
+   Modified to output HJC 12/07/2007 
+   Modified to stop LHEE being renamed as LHE1 if model run multiple times
+   Modified to calculate arch height index based on foot length from static - rather than instantaneous foot length 01/11/2007
+   
+   LR VICON: Added OptionalPoints for all markers to allow model to be run bilaterally or unilaterally.
+   LR VICON: Added OptionalPoints for LPSI/RPSI/SACR to allow the LPSI/RPSI pair to be used instead of SACR.
+
+   SM Vicon: Store local copy of R/LHE1 to operate on to break input/output dependency
+   SM Vicon: Use R/LHE1 as a flag for the heel marker having been moved rather than a distance check
+   SM Vicon: Output R/LM5Proj - seems to be required to stabilize HFPlantar values across multiple runs??
+   *}
+
+{* Kinetics removed by MH march05 *}
+
+{*The model uses a total of 32 markers on the feet and lower legs:
+	R/LHFB		Head of Fibula
+	R/LTUB		Tibial Tuberosity
+	R/LSHN		Shin 1
+	R/LANK		Lateral malleolus
+	R/LMMA		Medial malleolus
+	R/LCPG		Posterior peg end of calcaneus
+	R/LHEE		Posterior distal calcaneus (called RHE1/LHE1 in code)
+	R/LPCA		Posterior proximal calcaneus
+	R/LLCA		Lateral calcaneus
+	R/LSTL		Sustaniculum Tali
+	R/LP1M		Proximal dorsal end, 1st metatarsal
+	R/LD1M		Distal medial end, 1st metatarsal
+	R/LP5M		Proximal lateral end, 5th metatarsal
+	R/LD5M		Distal lateral end, 5th metatarsal
+	R/LTOE		Distal end of 2/3rd metatarsal
+	R/LHLX		Proximal end of first phalanx
+    
+R/LMMA, R/LPCA, R/LD1M are required only for static trials.
+
+And a further 9 markers on the legs
+	SACR
+	RASI
+	LASI
+	RTHI
+	LTHI
+	RKNE
+	LKNE
+	RTIB
+	LTIB
+	
+
+1) collect static and motion trials, using above markers
+2) set parameters in 2footandlegs.MP
+3) set $static = 1 in 2footandlegs.MP and process static trial
+4) set $static = 0 in 2footandlegs.MP and process motion trial       *******}
+
+
+{*Start of macro section*}
+{*======================*}
+
+{*REPLACE4 Replaces any point missing from set of four fixed in a segment*}
+ macro REPLACE4(p1,p2,p3,p4)
+	s234 = [p3,p2-p3,p3-p4]
+	p1V = Average(p1/s234)*s234
+
+	s341 = [p4,p3-p4,p4-p1]
+	p2V = Average(p2/s341)*s341
+
+	s412 = [p1,p4-p1,p1-p2]
+	p3V = Average(p3/s412)*s412
+
+	s123 = [p2,p1-p2,p2-p3]
+	p4V = Average(p4/s123)*s123
+
+	p1 = (p1+p1V)/2 ? p1 ? p1V
+	p2 = (p2+p2V)/2 ? p2 ? p2V
+	p3 = (p3+p3V)/2 ? p3 ? p3V
+	p4 = (p4+p4V)/2 ? p4 ? p4V
+ endmacro
+
+{*PROJN Finds the projection of p1 on plane defined by p2,p3,p4 *}
+ macro PROJN(p1,p2,p3,p4,p5)
+	{*line perpendicular to plane p2,p3,p4*}
+	perpdir = NORM(p2,p3,p4)  
+
+	{*p1 mirrored in plane p2,p3,p4*}
+	mirrorP1 = p1 + 50 * perpdir 
+	
+	{*p5 is then perpendicular bisector from p3 to line p1-mirrorP1*}
+	p5 = PERP(p3,p1,mirrorP1)
+ endmacro
+
+{* End of macro section *}
+
+
+
+
+{* ===================================== *}
+{* Evaluate parameters used in modelling *}
+{* ===================================== *}
+
+{* Most right/left measurements are averaged !  					*}
+
+{*LegLength = ($LLegLength + $RLegLength)/2*}
+LegLength = 100
+
+ {* Added support for LPSI/RPSI instead of just SACR *}
+ OptionalPoints(LPSI,RPSI,SACR)
+
+ SACR = (LPSI + RPSI) / 2 ? SACR
+
+
+{* Different definition of LAsisTrocDist depending on whether $ASIStoTrocdist is 	*}
+{* set to 0 or not. 									*}
+
+If $LASISTrocanterDistance + $RASISTrocanterDistance == 0 then
+  LAsisTrocDist = 0.1288*LegLength-48.56
+  RAsisTrocDist = 0.1288*LegLength-48.56
+else
+  LAsisTrocDist = $LASISTrocanterDistance
+  RAsisTrocDist = $RASISTrocanterDistance
+endIf
+
+LVCMThighOffset = $LThighRotation
+RVCMThighOffset = $RThighRotation 
+
+LVCMShankOffset = $LShankRotation
+RVCMShankOffset = $RShankRotation
+
+{* Different definition of InterASISDist depending on whether $InterASISDistance 	*}
+{* is set to 0 or not.									*}
+
+If $InterASISDistance == 0 then
+  InterASISDist = DIST(LASI,RASI)
+else
+  InterASISDist = $InterASISDistance
+endIf
+
+
+{* Parameters used to work out position of hip joint centres (see Davis paper)		*}
+
+C 	 = (LegLength)*0.115-15.3
+aa 	 = InterASISDist/2
+mm  	 = $MarkerDiameter/2
+COSBETA  = cos(18)
+SINBETA  = sin(18)
+COSTHETA = cos(28.4)
+SINTHETA = sin(28.4)
+
+{* Parameters used to work out knee and ankle position*}
+
+KneeWidth   = ($LKneeWidth+$RKneeWidth)/2
+KneeOffset  = ($MarkerDiameter+KneeWidth)/2
+AnkleWidth  = ($LAnkleWidth+$RAnkleWidth)/2
+AnkleOffset = ($MarkerDiameter+AnkleWidth)/2
+
+
+{* ====================================================== *}
+{* Define Pelvis and use this to define hip joint centres *}
+{* ====================================================== *}
+
+{* Define pelvic origin and segment on basis of marker centres.				*}
+{* After this adjust both for offset of one marker diameter.				*}
+
+PEL0	= (LASI+RASI)/2
+Pelvis  = [PEL0,LASI-RASI,PEL0-SACR,yzx]
+{* Pel0	= PEL0-($MarkerDiameter/2)*Pelvis(1)
+Pelvis 	= [PEL0, LASI-RASI,PEL0-SACR,yzx] *}
+
+
+{* Define hip joint centres using Davis model						*}
+
+LHJC = {C*COSTHETA*SINBETA - (LAsisTrocDist+mm) * COSBETA,
+       -C*SINTHETA + aa,
+       -C*COSTHETA*COSBETA - (LAsisTrocDist+mm) * SINBETA}*Pelvis
+
+RHJC = {C*COSTHETA*SINBETA - (RAsisTrocDist+mm) * COSBETA,
+        C*SINTHETA - aa,
+       -C*COSTHETA*COSBETA - (RAsisTrocDist+mm) * SINBETA}*Pelvis
+
+OUTPUT(LHJC,RHJC)
+
+{* ============= *}
+{* Define Femora *}
+{* ============= *}
+
+{* Calculates the position of the femur assuming that the thigh marker has to be	*}
+{* rotated about a line from knee marker to hip joint centre by FemurRotation.		*}
+{* Note: $FemurRotation is not the same as ThighOffset as used by VCM. 			*}
+
+{* Calculate LFemurRotation given LVCMThighOffset.					*}							
+{* Method too complex to comment adequately here, see document "How VCM calculates 	*}
+{* thigh rotation offsets".								*}
+
+{* Bodybuilder version 3.51 and earlier cannot calculate square root of zero so only	*}
+{* perform this calculation if LVCMThighOffset is not zero.				*}
+
+If LVCMThighOffset <> 0 then
+  LTaxes = [LHJC,LKNE-LHJC,LTHI-LKNE,zxy]
+  wy=2(LTHI/LTaxes)
+  wz=3(LTHI/LTaxes)
+  thi=asin(KneeOffset/dist(LHJC,LKNE))
+  psi=LVCMThighOffset
+
+  a  = wy*wy
+  b  = 2*cos(psi)*sin(psi)*sin(thi)*wy*wz
+  c  = sin(psi)*sin(psi)*(sin(thi)*sin(thi)*wz*wz-cos(thi)*cos(thi)*wy*wy)
+
+  thetaplus  = asin((-b+sqrt(b*b-4*a*c))/(2*a))
+  thetaminus = asin((-b-sqrt(b*b-4*a*c))/(2*a))
+
+
+{* Solution with opposite sign to $LVCMThighOffset is correct but must be multiplied by -1 *}
+
+  If thetaplus*LVCMThighOffset > 0 then
+    LFemurRotation=-thetaminus
+  else
+    LFemurRotation=-thetaplus
+  endIf
+
+else
+  LFemurRotation = 0
+endIf
+
+
+{* End of calculation of LFemurRotation. Normal comment resumed.			*}
+
+
+{* Define segment (THIGH) from three points LKNE, LHJC, LTHI. 				*}
+LThigh = [LKNE,LHJC-LKNE,LTHI-LKNE,zxy]
+
+{* Determine local co-ordinates of LTHI within this segment. 				*}
+%LTHI  = LTHI/LThigh
+
+{* Rotate segment about axis from LKNE to LHJC by $LFemurRotation (degrees) 		*}
+LThigh = ROT(LThigh,LThigh(3),-LFemurRotation)
+
+{* Calculate position of LTHI if it had been placed to define this axis system 		*}
+LTHR   = %LTHI*LThigh
+
+{* Define femur using VCM model but corrected position of thigh marker 			*}
+LKJC   = CHORD(KneeOffset,LKNE,LHJC,LTHR)
+LFemur = [LKJC,LHJC-LKJC,LTHR-LKJC,zxy]
+
+
+{* Repeat for right femur (comment removed)						*}
+						
+If RVCMThighOffset <> 0 then
+  RTaxes = [RHJC,RKNE-RHJC,RTHI-RKNE,zxy]
+  wy=2(RTHI/RTaxes)
+  wz=3(RTHI/RTaxes)
+  thi=asin(KneeOffset/dist(RHJC,RKNE))
+  psi=RVCMThighOffset
+
+  a  = wy*wy
+  b  = 2*cos(psi)*sin(psi)*sin(thi)*wy*wz
+  c  = sin(psi)*sin(psi)*(sin(thi)*sin(thi)*wz*wz-cos(thi)*cos(thi)*wy*wy)
+
+  thetaplus  = asin((-b+sqrt(b*b-4*a*c))/(2*a))
+  thetaminus = asin((-b-sqrt(b*b-4*a*c))/(2*a))
+
+  If thetaplus*RVCMThighOffset > 0 then
+    RFemurRotation=-thetaminus
+  else
+    RFemurRotation=-thetaplus
+  endIf
+
+else
+  RFemurRotation = 0
+endIf
+
+RThigh = [RKNE,RHJC-RKNE,RKNE-RTHI,zxy]
+%RTHI  = RTHI/RThigh
+RThigh = ROT(RThigh,RThigh(3),RFemurRotation)	
+RTHR   = %RTHI*RThigh
+RKJC   = CHORD(KneeOffset,RKNE,RHJC,RTHR)
+RFemur = [RKJC,RHJC-RKJC,RKJC-RTHR,zxy]
+
+
+{* ============= *}
+{* Define Tibiae *}
+{* ============= *}
+
+{* Calculates the position of the tibia assuming that the tibia marker has to be	*}
+{* rotated about a line from ankle marker to knee joint centre by TibiaRotation.	*}
+{* Note: TibiaRotation is not the same as ShankOffset as used by VCM. 			*}
+
+{* Calculate LTibiaRotation given LVCMShankOffset.					*}							
+{* Method too complex to comment adequately here, see document "How VCM calculates 	*}
+{* thigh rotation offsets".								*}
+
+If LVCMShankOffset <> 0 then
+  LTaxes = [LKJC,LANK-LKJC,LTIB-LANK,zxy]
+  vy=2(LTIB/LTaxes)
+  vz=3(LTIB/LTaxes)
+  thi=asin(AnkleOffset/dist(LKJC,LANK))
+  psi=LVCMShankOffset
+
+  a  = vy*vy
+  b  = 2*cos(psi)*sin(psi)*sin(thi)*vy*vz
+  c  = sin(psi)*sin(psi)*(sin(thi)*sin(thi)*vz*vz-cos(thi)*cos(thi)*vy*vy)
+
+  thetaplus  = asin((-b+sqrt(b*b-4*a*c))/(2*a))
+  thetaminus = asin((-b-sqrt(b*b-4*a*c))/(2*a))
+
+
+{* Solution with opposite sign to $LVCMShankOffset is correct but must be multiplied by -1 *}
+
+  If thetaplus*LVCMShankOffset > 0 then
+    LTibiaRotation=-thetaminus
+  else
+    LTibiaRotation=-thetaplus
+  endIf
+
+else
+  LTibiaRotation = 0
+endIf
+
+param(LTibiaRotation)
+
+{* End of calculation of LTibiaRotation. Normal comment resumed.			*}
+
+
+{* Define segment (Shank) from three points LANK, LKJC, LTIB. 				*}
+LShank = [LANK,LKJC-LANK,LTIB-LANK,zxy]
+
+{* Determine local co-ordinates of LTIB within this segment. 				*}
+%LTIB  = LTIB/LShank
+{* Rotate segment about axis from LKNE to LHJC by LTibiaRotation (degrees) 		*}
+LShank = ROT(LShank,LShank(3),-LTibiaRotation)
+
+{* Calculate position of LTIB if it had been placed to define this axis system 		*}
+LTIR   = %LTIB*LShank
+
+{* Define tibia using VCM model but corrected position of thigh marker 			*}
+LAJC   = CHORD(AnkleOffset,LANK,LKJC,LTIR)
+LTibia = [LAJC,LKJC-LAJC,LTIR-LAJC,zxy]
+
+
+{* Repeat for right tibia (comment removed)						*}
+
+If RVCMShankOffset <> 0 then
+  RTaxes = [RKJC,RANK-RKJC,RTIB-RANK,zxy]
+  vy=2(RTIB/RTaxes)
+  vz=3(RTIB/RTaxes)
+  thi=asin(AnkleOffset/dist(RKJC,RANK))
+  psi=RVCMShankOffset
+
+  a  = vy*vy
+  b  = 2*cos(psi)*sin(psi)*sin(thi)*vy*vz
+  c  = sin(psi)*sin(psi)*(sin(thi)*sin(thi)*vz*vz-cos(thi)*cos(thi)*vy*vy)
+
+  thetaplus  = asin((-b+sqrt(b*b-4*a*c))/(2*a))
+  thetaminus = asin((-b-sqrt(b*b-4*a*c))/(2*a))
+
+  If thetaplus*RVCMShankOffset > 0 then
+    RTibiaRotation=-thetaminus
+  else
+    RTibiaRotation=-thetaplus
+  endIf
+
+else
+  RTibiaRotation = 0
+endIf
+
+param(RTibiaRotation)
+
+RShank = [RANK,RKJC-RANK,RTIB-RANK,zxy]
+%RTIB  = RTIB/RShank
+RShank = ROT(RShank,RShank(3),RTibiaRotation)
+RTIR   = %RTIB*RShank
+RAJC   = CHORD(AnkleOffset,RANK,RKJC,RTIR)
+RTibia = [RAJC,RKJC-RAJC,RAJC-RTIR,zxy]
+
+
+{* =========== *}
+{* Define feet *}
+{* =========== *}
+
+LFoot=[LAJC,LAJC-LTOE,LAJC-LKJC,zyx]
+RFoot=[RAJC,RAJC-RTOE,RAJC-RKJC,zyx]
+
+{*Apply Static Trial Offsets								*}
+
+LFoot=ROT(LFoot,2(LFoot),-$LStaticPlantFlex)
+RFoot=ROT(RFoot,2(RFoot),-$RStaticPlantFlex)
+
+LFoot=ROT(LFoot,1(LFoot),-$LStaticRotOff)
+RFoot=ROT(RFoot,1(RFoot),$RStaticRotOff)
+
+If $TravelDirectionX == 0
+  
+{* Work out which way subject is walking *}
+	UpLab = 1
+	If 2(PEL0) > 2(SACR) then 
+  		LAB = [{0,0,0}, {0,1,0}, {0,0,1}, xyz]
+  		UpLab = 0	
+	else
+  		LAB = [{0,0,0}, {0,-1,0}, {0,0,1}, xyz]
+	endIf
+Else
+	UpLab = 1
+	If 1(PEL0) > 1(SACR) then 
+  		LAB = [{0,0,0}, {1,0,0}, {0,0,1}, xyz]
+  		UpLab = 0	
+	else
+  		LAB = [{0,0,0}, {-1,0,0}, {0,0,1}, xyz]
+	endIf
+
+EndIf
+
+
+
+
+
+{* =========================== *}
+{* Foot Model Code begins here *}
+{* =========================== *}
+
+{*Points which may not be present in every trial*}
+ OptionalPoints(LMMA,RMMA,LPCA,RPCA,LD1M,RD1M,LSTL,RSTL,LCPG,RCPG)
+ OptionalPoints(LHLX,RHLX,LHEE,RHEE,LHE1,RHE1)
+{* All other marker in model, allowing you to run just one of the feet *}
+ OptionalPoints(RHFB,LHFB,RTUB,LTUB,RSHN,LSHN,RLCA,LLCA) 
+ OptionalPoints(RP1M,LP1M,RP5M,LP5M,RD5M,LD5M)
+ OptionalPoints(RANK,LANK,RTOE,LTOE)
+
+ $MarkerRadius = $MarkerDiameter/2
+
+{* Relabel VCM heel markers to foot markers, to all heel marker to be moved when foot not flat in static. *}
+
+{* flag whether this model has moved the HEE marker - if it has there will be a L/RHE1 marker present which we should use instead *}
+ $HasLHE1 = 0
+ If ExistAtAll(LHE1)
+  LHE1 = LHE1
+  $HasLHE1 = 1
+ Else
+	LHE1 = LHEE
+ EndIf
+
+ $HasRHE1 = 0
+ If ExistAtAll(RHE1)
+  RHE1 = RHE1
+  $HasRHE1 = 1
+ Else
+	RHE1 = RHEE
+ EndIf
+
+ {* local copy of the original heel marker position that we can modify *}
+ LHE0 = LHE1
+ RHE0 = RHE1
+
+{*Minimise dropouts of hindfoot, forefoot and tibia*}
+ REPLACE4(LANK,LHFB,LTUB,LSHN)
+ REPLACE4(RANK,RHFB,RTUB,RSHN)
+ REPLACE4(LHE0,LLCA,LSTL,LCPG)
+ REPLACE4(RHE0,RLCA,RSTL,RCPG)
+ REPLACE4(LP1M,LD5M,LTOE,LP5M)
+ REPLACE4(RP1M,RD5M,RTOE,RP5M)
+
+{*Create dummy segments using most visible markers, present in all trials*}
+ DummyLTibia = [LANK,LHFB-LANK,LSHN-(LANK+LHFB)/2]
+ DummyRTibia = [RANK,RHFB-RANK,RSHN-(RANK+RHFB)/2]
+ DummyLHindFoot = [LHE0,LHE0-((LSTL+LLCA)/2),LSTL-LLCA]
+ DummyRHindFoot = [RHE0,RHE0-((RSTL+RLCA)/2),RSTL-RLCA]
+ DummyLForeFoot = [LP1M,LP1M-LD5M,LTOE-LP5M] 
+ DummyRForeFoot = [RP1M,RP1M-RD5M,RTOE-RP5M]
+ DummyLLatForeFoot = [LP5M,LD5M-LP5M,LTOE-LD5M]
+ DummyRLatForeFoot = [RP5M,RD5M-RP5M,RTOE-RD5M]
+
+{*Added lines by Sean McBride Feb 5 2021 to test Dummy axes for openOFM*}
+DRTIB0 = RANK
+DRTIB1 = DRTIB0 + 50*1(DummyRTibia)
+DRTIB2 = DRTIB0 + 50*2(DummyRTibia)
+DRTIB3 = DRTIB0 + 50*3(DummyRTibia)
+
+DRHDF0 = RHE0
+DRHDF1 = DRHDF0 + 50*1(DummyRHindFoot)
+DRHDF2 = DRHDF0 + 50*2(DummyRHindFoot)
+DRHDF3 = DRHDF0 + 50*3(DummyRHindFoot)
+
+DRFOF0 = RP1M
+DRFOF1 = DRFOF0 + 50*1(DummyRForeFoot)
+DRFOF2 = DRFOF0 + 50*2(DummyRForeFoot)
+DRFOF3 = DRFOF0 + 50*3(DummyRForeFoot)
+
+OUTPUT (DRTIB0,DRTIB1,DRTIB2,DRTIB3,DRHDF0,DRHDF1,DRHDF2,DRHDF3,DRFOF0,DRFOF1,DRFOF2,DRFOF3)
+{*End of added lines to test Dummy axes for openOFM*}
+
+
+
+
+
+
+{* ============================ *}
+{* Define Tibia relative to Lab *}
+{* ============================ *}
+
+
+{* This segment uses 5 markers in static trials (R/LHFB,R/LTUB,R/LSHN,R/LMMA,R/LANK),
+   with medial maleolus marker, R/LMMA, removed for motion trials*}
+
+
+{*For static trial in which medial markers are present, save key 
+  anatomical points as parameters*}
+ If $Static == 1
+    {*Convert to local coordinates of DummyTibia*}
+	$%RMMA = RMMA/DummyRTibia
+	$%LMMA = LMMA/DummyLTibia
+    {*Save average of these as parameters*}
+	PARAM($%RMMA,$%LMMA)
+ EndIf
+
+
+{*Create global position of R/LMMA from parameters and dummy tibia segment*}
+ RMMA = $%RMMA*DummyRTibia
+ LMMA = $%LMMA*DummyLTibia
+
+ LAJC = (LMMA+LANK)/2
+ RAJC = (RMMA+RANK)/2
+ 
+{*Define frontal plane as (MMAL,LMAL,HFIB)*}
+{*Find projection of TTUB on frontal plane of tibia*}
+ PROJN(LTUB, LMMA, LANK, LHFB, LPROT)
+ PROJN(RTUB, RMMA, RANK, RHFB, RPROT)
+
+{*Define Tibia segment with z axis in line of (Proj of TTUB)-AJC, and 
+  define x perpendicular to frontal plane *}
+ LTibiaLab = [LAJC,LPROT-LAJC,LANK-LMMA,zxy]
+ RTibiaLab = [RAJC,RPROT-RAJC,RMMA-RANK,zxy]
+ 
+
+
+{*Tibia axes for visualisation*}
+ LTIB1 = LAJC+50*1(LTibia)
+ LTIB2 = LAJC+50*2(LTibia)
+ LTIB3 = LAJC+400*3(LTibia)
+
+{*Tibia axes for visualisation*}
+ RTIB1 = RAJC+50*1(RTibia)
+ RTIB2 = RAJC+50*2(RTibia)
+ RTIB3 = RAJC+400*3(RTibia)
+
+{*Output points*}
+ OUTPUT(LAJC,RAJC,LTIB1,LTIB2,LTIB3,RTIB1,RTIB2,RTIB3)
+
+
+{* Define virtual markers in hind and forefoot frames from static data.*}
+{*=====================================================================*}
+ If $Static == 1
+
+      {*Output LegLength calculated as LASI to LKNE, + LKNE to LANK, and also for right*}
+	LLeg = dist(LHJC,LKJC)+dist(LKJC,LAJC)
+	RLeg = dist(RHJC,RKJC)+dist(RKJC,RAJC)
+	LViconLegLength = {0,0,LLeg}
+	RViconLegLength = {0,0,RLeg}
+	$RFootLength = dist(RHEE,RTOE)
+	$LFootLength = dist(LHEE,LTOE)
+  PARAM( $LFootLength, $RFootLength )
+
+      {*Projection of R/LP5M in plane of R/LHE0, R/LPCA, mid point between R/LSTL and R/LLCA*}
+	LMidHeel = (LSTL+LLCA)/2
+	PROJN(LP5M,LHE0,LPCA,LMidHeel,LP5MProj)
+	RMidHeel = (RSTL+RLCA)/2
+	PROJN(RP5M,RHE0,RPCA,RMidHeel,RP5MProj)
+
+  {* if we don't output these, there's a slight difference in HFPlantar the second time this is run?? *}
+  output( LP5MProj )
+  output( RP5MProj )
+
+  {*Define point (R/LHFplantar) that R/LHE0 is parallel to on plantar surface of hindfoot*}	
+	If $LHindFootFlat == 0
+		LHFplantar = LP5MProj
+    If $HasLHE1 == 0
+		  LHEE = (LHEE+LPCA)/2
+  	  Output (LHEE)
+      Output (LHE1)
+    Endif
+ 	Else
+		LHFplantar = {1(LP5MProj),2(LP5MProj),3(LHE0)}
+	EndIf
+
+	If $RHindFootFlat == 0
+		RHFplantar = RP5MProj
+    If $HasRHE1 == 0
+		  RHEE = (RHEE+RPCA)/2
+		  Output (RHEE)
+      Output (RHE1)
+    Endif
+	Else
+		RHFplantar = {1(RP5MProj),2(RP5MProj),3(RHE0)}
+	EndIf
+
+      {*Option to include offset of hindfoot based on x-ray measurement
+	NB Rotation about HF DF axis to maintain alignment with cal markers
+	 - this will affect inv/eversion *}
+	If $LXRayOffset <> 0
+		StaticLHindfoot = [LHE0,LHFplantar-LHE0,LTOE-LHE0,zyx]
+		%LHFplantar = LHFplantar/StaticLHindfoot
+		StaticLHindfoot = ROT(StaticLHindFoot,2(StaticLHindFoot),$LXRayOffset)
+		LHFplantar = %LHFplantar * StaticLHindfoot		
+	EndIf
+
+	If $RXRayOffset <> 0
+		StaticRHindfoot = [RHE0,RHFplantar-RHE0,RTOE-RHE0,zyx]
+		%RHFplantar = RHFplantar/StaticRHindfoot
+		StaticRHindfoot = ROT(StaticRHindFoot,2(StaticRHindFoot),$RXRayOffset)
+		RHFplantar = %RHFplantar * StaticRHindfoot		
+	EndIf
+
+  
+     {*Find the projection of proximal FF vector & R/LTOE on plantar surface of forefoot*}
+	If $LUseFloorFF == 1
+		LD1M0 = {1(LD1M),2(LD1M),3(LP5M)}
+		LD5M0 = {1(LD5M),2(LD5M),3(LP5M)}
+	Else
+		LD1M0 = LD1M
+		LD5M0 = LD5M
+	EndIf
+
+	If $RUseFloorFF == 1
+		RD1M0 = {1(RD1M),2(RD1M),3(RP5M)}
+		RD5M0 = {1(RD5M),2(RD5M),3(RP5M)}
+	Else
+		RD1M0 = RD1M
+		RD5M0 = RD5M
+	EndIf
+
+     {*Create virtual markers from D1MT and P1MT on plantar surface for tracking lateral forefoot only*}
+	LD1Mlat = LD1M0
+	LP1Mlat = LP1M
+	LD5Mlat = LD5M0
+
+	RD1Mlat = RD1M0
+	RP1Mlat = RP1M
+	RD5Mlat = RD5M0
+	
+
+     {*Define point halfway between R/LD1M and R/LD5M*}
+	RDISTFF = (RD1M + RD5M)/2
+	LDISTFF = (LD1M + LD5M)/2
+
+    
+             
+    {*Convert to local coordinates and save as parameters*}
+	$%LHFplantar = LHFplantar/DummyLHindFoot
+	$%RHFplantar = RHFplantar/DummyRHindFoot
+	$%LPCA = LPCA/DummyLHindFoot
+	$%RPCA = RPCA/DummyRHindFoot
+
+	$%LD1Mlat = LD1Mlat/DummyLLatForeFoot
+	$%LP1Mlat = LP1Mlat/DummyLLatForefoot
+  	$%LD5Mlat = LD5M0/DummyLLatForeFoot
+
+	$%RD1Mlat = RD1Mlat/DummyRLatForeFoot
+	$%RP1Mlat = RP1Mlat/DummyRLatForefoot
+  	$%RD5Mlat = RD5M0/DummyRLatForeFoot
+
+  	$%LD1M0 = LD1M0/DummyLForeFoot
+  	$%LD5M0 = LD5M0/DummyLForeFoot
+	$%LDISTFF = LDISTFF/DummyLForeFoot
+
+	$%RD1M0 = RD1M0/DummyRForeFoot
+  	$%RD5M0 = RD5M0/DummyRForeFoot
+	$%RDISTFF = RDISTFF/DummyRForeFoot
+
+	
+	
+  PARAM($%LHFplantar,$%RHFplantar,$%LPCA,$%RPCA,$%LD5M0,$%RD5M0,$%LD1M0,$%RD1M0,$%LDISTFF,$%RDISTFF,$%LD1Mlat,$%RD1Mlat)
+  PARAM($%LP1Mlat,$%RP1Mlat,$%LD5Mlat,$%RD5Mlat)
+  OUTPUT (LHFplantar,RHFplantar,LViconLegLength,RViconLegLength)
+
+ EndIf
+
+
+
+{* Hind Foot *}
+{* ========= *}
+{* This segment has 4 real markers: L/RCPG,L/RHEE,L/RLCA,L/RSTL + L/RPCA for the static trial*}
+
+{*Convert parameters to Global coordinates*}
+ 
+  LHFplantar = $%LHFplantar*DummyLHindFoot
+  LPCA = $%LPCA*DummyLHindFoot
+ 
+  RHFplantar = $%RHFplantar*DummyRHindFoot
+  RPCA = $%RPCA*DummyRHindFoot
+	
+{*Define hindfoot axes with y perp to plane defined in static and z parallel to HF plantar surface*}
+
+  LHindFoot = [LHE0,LHFplantar-LHE0,LPCA-LHE0,zyx]
+  RHindFoot = [RHE0,RHFplantar-RHE0,RPCA-RHE0,zyx]
+	
+{*OUTPUT(LHFplantar,LPCA,RHFplantar,RPCA)*}
+
+
+{*Hindfoot axes - Left Foot*}
+ LHDF0 = LHE0
+ LHDF1 = LHE0-50*1(LHindFoot)  {* for visual purposes x is drawn in neg dir*}
+ LHDF2 = LHE0+50*2(LHindFoot)
+ LHDF3 = LHE0+50*3(LHindFoot)
+
+ OUTPUT(LHDF0,LHDF1,LHDF2,LHDF3)
+
+{*Hindfoot axes - Right Foot*}
+ RHDF0 = RHE0
+ RHDF1 = RHE0-50*1(RHindFoot)  {* for visual purposes x is drawn in neg dir*}
+ RHDF2 = RHE0+50*2(RHindFoot)
+ RHDF3 = RHE0+50*3(RHindFoot)
+
+ OUTPUT(RHDF0,RHDF1,RHDF2,RHDF3)
+
+
+{* Forefoot *}
+{* ======= *}
+{* This segment has 4 real (L/RP5M L/RD5M,L/RTOE,L/RP1M) markers and L/RD1M for the static trial*}
+
+{*Convert parameters to Global coordinates*}
+
+	LD1Mlat = $%LD1Mlat * DummyLLatForeFoot
+ 	LP1Mlat = $%LP1Mlat * DummyLLatForeFoot
+	LD5Mlat = $%LD5Mlat * DummyLLatForeFoot
+
+	LD1M0 = $%LD1M0 * DummyLForeFoot
+	LDISTFF = $%LDISTFF * DummyLForeFoot
+
+	RD1Mlat = $%RD1Mlat * DummyRLatForeFoot
+ 	RP1Mlat = $%RP1Mlat * DummyRLatForeFoot
+	RD5Mlat = $%RD5Mlat * DummyRLatForeFoot
+
+	RD1M0 = $%RD1M0 * DummyRForeFoot
+	RDISTFF = $%RDISTFF * DummyRForeFoot
+ 
+
+ LP5M0 = LP5M
+ RP5M0 = RP5M
+
+ If $LUseFloorFF == 1
+  	LD5M0 = $%LD5M0 * DummyLForeFoot
+ Else
+	LD5M0 = LD5M
+ EndIf
+
+ If $RUseFloorFF == 1
+  	RD5M0 = $%RD5M0 * DummyRForeFoot
+ Else
+	RD5M0 = RD5M
+ EndIf
+
+ LD5M0lat = LD5M0
+ RD5M0lat = RD5M0
+
+{*Calculate L/RP1M0 & L/RTOE0, the projection of L/RP1M & L/RTOE on plantar surface of forefoot*}
+  PROJN(LP1M,LD1M0,LD5M0,LP5M0,LP1M0) 
+  PROJN(LTOE,LD1M0,LD5M0,LP5M0,LTOE0) 
+
+  PROJN(LP1Mlat,LD1Mlat,LD5M0lat,LP5M0,LP1M0lat) 
+  PROJN(LTOE,LD1Mlat,LD5Mlat,LP5M0,LTOE0lat) 
+
+  PROJN(RP1M,RD1M0,RD5M0,RP5M0,RP1M0) 
+  PROJN(RTOE,RD1M0,RD5M0,RP5M0,RTOE0) 
+
+  PROJN(RP1Mlat,RD1Mlat,RD5M0lat,RP5M0,RP1M0lat) 
+  PROJN(RTOE,RD1Mlat,RD5Mlat,RP5M0,RTOE0lat) 
+  
+{*Added lines by Sean to output intermediary values of PROJN macro for testing*}
+perpdirRTOE = NORM(RD1M0,RD5M0,RP5M0)  
+mirrorRTOE = RTOE + 50 * perpdirRTOE
+
+OUTPUT(mirrorRTOE)
+{*End of added lines by Sean Feb 5 2021*}
+
+{*Calculate Arch Height as absolute difference between P1MT and projection of P1MT on plantar surface of forefoot*}
+  LArchHeightIndex = dist(LP1M0lat,LP1M)/$LFootLength*100
+  LArchHeight = {0,0,LArchHeightIndex}
+  RArchHeightIndex = dist(RP1M0lat,RP1M)/$RFootLength*100
+  RArchHeight = {0,0,RArchHeightIndex}
+ 
+  $ProxFFfactor = 2
+  
+ $LP1P5dist = dist(LP1M0,LP5M0)
+ $LatLP1P5dist = dist(LP1M0lat,LP5M0)
+ 
+ $LProxFFscale = ($LP1P5dist - $MarkerRadius)/($ProxFFfactor*$LP1P5dist) 
+ $LLatProxFFscale = ($LatLP1P5dist - $MarkerRadius)/($ProxFFfactor*$LatLP1P5dist) 
+
+ LPROXFF = LP1M0 + (LP5M0-LP1M0)*$LProxFFscale
+ LLatPROXFF = LP1M0lat + (LP5M0-LP1M0lat)*$LLatProxFFscale
+
+ $RP1P5dist = dist(RP1M0,RP5M0)
+ $LatRP1P5dist = dist(RP1M0lat,RP5M0)
+ 
+ $RProxFFscale = ($RP1P5dist - $MarkerRadius)/($ProxFFfactor*$RP1P5dist) 
+ $RLatProxFFscale = ($LatRP1P5dist - $MarkerRadius)/($ProxFFfactor*$LatRP1P5dist) 
+
+ RPROXFF = RP1M0 + (RP5M0-RP1M0)*$RProxFFscale
+ RLatPROXFF = RP1M0lat + (RP5M0-RP1M0lat)*$RLatProxFFscale
+ 
+ 
+{*Define Forefoot segment with anterior (z) axis along forefoot neutral line*}
+ LForeFoot = [LTOE0,LTOE0-LPROXFF,LD5M0-LD1M0,zxy]
+ RForeFoot = [RTOE0,RTOE0-RPROXFF,RD1M0-RD5M0,zxy]  
+
+
+
+{*Forefoot axes - Left foot*}
+ LFOF0 = LTOE0      
+ LFOF1 = LFOF0-50*1(LForeFoot)    {* for visual purposes x is drawn in neg dir*}
+ LFOF2 = LFOF0+50*2(LForeFoot)
+ LFOF3 = LFOF0+50*3(LForeFoot)
+
+ OUTPUT(LFOF0,LFOF1,LFOF2,LFOF3,LArchHeightIndex,LArchHeight,LPROXFF,RPROXFF)
+
+{*Forefoot axes - Right foot*}
+ RFOF0 = RTOE0      
+ RFOF1 = RFOF0-50*1(RForeFoot)    {* for visual purposes x is drawn in neg dir*}
+ RFOF2 = RFOF0+50*2(RForeFoot)
+ RFOF3 = RFOF0+50*3(RForeFoot)
+
+ OUTPUT(RFOF0,RFOF1,RFOF2,RFOF3,RArchHeightIndex,RArchHeight,LD1M0,RD1M0)
+
+
+{* Hallux *}
+{* ====== *}
+{* This segment has 1 real marker (R/LHLX)*}
+
+ LHallux=[LD1M0,LHLX-LD1M0,LD5M0-LD1M0,zxy]
+ RHallux=[RD1M0,RHLX-RD1M0,RD1M0-RD5M0,zxy]
+
+ 
+
+{*Hallux axes - left foot*}
+ LHLX0 = LHLX
+ LHLX1 = LHLX0 - 50 * 1(LHallux)	{*x made -ve for visual purposes*}
+ LHLX2 = LHLX0 + 50 * 2(LHallux)
+ LHLX3 = LHLX0 + 50 * 3(LHallux)	
+ 
+
+{*Hallux axes - right foot*}
+ RHLX0 = RHLX
+ RHLX1 = RHLX0 - 50 * 1(RHallux)	{*x made -ve for visual purposes*}
+ RHLX2 = RHLX0 + 50 * 2(RHallux)
+ RHLX3 = RHLX0 + 50 * 3(RHallux)	
+
+ OUTPUT(LHLX0,LHLX1,LHLX2,LHLX3,RHLX0,RHLX1,RHLX2,RHLX3)
+
+
+
+{* ====== *}
+{* Angles *}
+{* ====== *}
+{* Calculates knee joint angles as in VCM *}
+
+PELAng=-<LAB,Pelvis,yxz>
+PELAng=<1(PELAng),2(PELAng),-3(PELAng)>    {*ant. tilt, left up, left forward		*} 
+LHPA=-<Pelvis,LFemur,yxz>
+LHPA=<-1(LHPA),-2(LHPA),-3(LHPA)> {*flexion, adduction, int. rot.			*}
+RHPA=-<Pelvis,RFemur,yxz>
+RHPA=<-1(RHPA),2(RHPA),3(RHPA)>   {*flexion, adduction, int. rot.			*}
+LKNA=-<LFemur,LTibia,yxz>
+LKNA=<1(LKNA),-2(LKNA),-3(LKNA)-$LTibialTorsion>  {*flexion, varus, int. rot.		*}
+RKNA=-<RFemur,RTibia,yxz>
+RKNA=<1(RKNA),2(RKNA),3(RKNA)-$RTibialTorsion>    {*flexion, varus, int. rot.		*}
+LANA=-<LTibia,LFoot,yxz>
+LANA=<-1(LANA)-90,-3(LANA),-2(LANA)> {*dflexion, adduction, int. rot.			*}
+RANA=-<RTibia,RFoot,yxz>
+RANA=<-1(RANA)-90,3(RANA),2(RANA)>   {*dflexion, adduction, int. rot.			*}
+LFTA=-<LAB,LFoot,yxz>
+LFTA=<1(LFTA),3(LFTA),-2(LFTA)>  {*dflexion, adduction, int. rot.			*}
+RFTA=-<LAB,RFoot,yxz>
+RFTA=<1(RFTA),-3(RFTA),2(RFTA)>   {*dflexion, adduction, int. rot.			*}
+
+
+{*Calculate foot model angles, using Grood&Suntay sequence - flexion,abduction,rotation*}
+
+ LFETBA = -<LFemur,LTibia,yxz>
+ RFETBA = -<RFemur,RTibia,yxz>
+ LTIBA =  -<LAB,LTibiaLab,yxz>
+ RTIBA =  -<LAB,RTibiaLab,yxz>
+ LHFTFL = -<LAB,LHindFoot,yxz>
+ RHFTFL = -<LAB,RHindFoot,yxz>
+ LHFTBA = -<LTibia,LHindFoot,yxz>
+ RHFTBA = -<RTibia,RHindFoot,yxz>
+ LFFTBA = -<LTibia,LForeFoot,yxz>
+ RFFTBA = -<RTibia,RForeFoot,yxz>
+ LFFHFA = -<LHindfoot,LForeFoot,yxz>
+ RFFHFA = -<RHindfoot,RForeFoot,yxz>
+ LHXFFA = -<LForeFoot,LHallux,yxz> 
+ RHXFFA = -<RForeFoot,RHallux,yxz> 
+
+ If 3(LTIBA) > 360
+	LTIBA = <1(LTIBA),2(LTIBA),3(LTIBA) - 360>
+ ElseIf 3(LTIBA) < -360
+	LTIBA = <1(LTIBA),2(LTIBA),3(LTIBA) + 360>
+ EndIf
+
+ If 3(RTIBA) > 360
+	RTIBA = <1(RTIBA),2(RTIBA),3(RTIBA) - 360>
+ ElseIf 3(RTIBA) < -360
+	RTIBA = <1(RTIBA),2(RTIBA),3(RTIBA) + 360>
+ EndIf
+
+	LFETBA = <1(LFETBA),-2(LFETBA),-3(LFETBA)>
+	LTIBA = <1(LTIBA),-2(LTIBA),-3(LTIBA)>
+	LHFTFL = <-1(LHFTFL)+90,-2(LHFTFL),-3(LHFTFL)> 
+	LHFTBA = <-1(LHFTBA)+90,2(LHFTBA),-3(LHFTBA)>
+	LFFTBA = <-1(LFFTBA)+90,2(LFFTBA),-3(LFFTBA)>
+	LFFHFA = <-1(LFFHFA),2(LFFHFA),-3(LFFHFA)>
+	LHXFFA = <-1(LHXFFA),2(LHXFFA),-3(LHXFFA)>
+	RFETBA = <1(RFETBA),2(RFETBA),3(RFETBA)>
+	RTIBA = <1(RTIBA),2(RTIBA),3(RTIBA)>
+	RHFTFL = <-1(RHFTFL)+90,2(RHFTFL),3(RHFTFL)> 
+	RHFTBA = <-1(RHFTBA)+90,-2(RHFTBA),3(RHFTBA)>
+	RFFTBA = <-1(RFFTBA)+90,-2(RFFTBA),3(RFFTBA)>
+	RFFHFA = <-1(RFFHFA),-2(RFFHFA),3(RFFHFA)>
+	RHXFFA = <-1(RHXFFA),-2(RHXFFA),3(RHXFFA)>
+
+
+ If UpLab == 1	
+	LTIBA = <1(LTIBA),2(LTIBA),3(LTIBA)>
+ 	RTIBA = <1(RTIBA),2(RTIBA),3(RTIBA)>
+ EndIf
+
+
+{*Output angles for plotting and saving*}
+ OUTPUT(LFETBA,LTIBA,LHFTFL,LHFTBA,LFFTBA,LFFHFA,LHXFFA)
+
+ OUTPUT(RFETBA,RTIBA,RHFTFL,RHFTBA,RFFTBA,RFFHFA,RHXFFA)
+
+
+{* ============= *}
+{* Output Angles *}
+{* ============= *}
+   
+  LPelvisAngles = PELAng
+  RPLA 	    = PELAng
+  RPelvisAngles = <1(RPLA),-2(RPLA),-3(RPLA)>
+
+  LHipAngles 	= LHPA
+  RHipAngles 	= RHPA
+  LKneeAngles   = LKNA
+  RKneeAngles   = RKNA
+  LAnkleAngles  = LANA
+  RAnkleAngles  = RANA
+  LProgAngles   = LFTA
+  RProgAngles   = RFTA
+  
+
+{* Below commented out so as not to output angles that will overwrite PiG angles**}  
+{*output(LPelvisAngles,RPelvisAngles,LHipAngles,RHipAngles,LKneeAngles,RKneeAngles,LAnkleAngles,RAnkleAngles,RProgAngles,LProgAngles,RProgMidAngles,LProgMidAngles)*}
+
+{* output angles with different names for comparison *}
+output(PELAng,LHPA,RHPA,LKNA,RKNA,LANA,RANA,LFTA,RFTA)
+output(LAJC,RAJC)

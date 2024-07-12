@@ -1,0 +1,4 @@
+ezc3d=1.5.9
+scipy=1.13.0
+matplotlib=3.8.4
+pyyaml=6.0.1
