@@ -102,7 +102,7 @@ def getDir(data, ch=None):
             LPSI = data['LPSI']
             vec = (RPSI + LPSI) / 2
         else:
-            vec = data['SACR']
+            vec = data['RPCA'] # Updated: use RPCA marker instead of SACR
     else:
         vec = data[ch]
 
