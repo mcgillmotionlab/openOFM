@@ -1,7 +1,7 @@
 import os
 from openOFM_dynamic import openOFM_dynamic
 from openOFM_static import openOFM_static
-from utils.utils import find_vcs_root, c3d_to_dict, make_plot_title, get_nrmse
+from utils.utils import find_repo_root, c3d_to_dict, make_plot_title, get_nrmse
 from plotting.plotting import plot_angles
 
 # global settings
@@ -21,7 +21,7 @@ def ofm_validate():
     settings['use_settings'] = False   # looks for settings in .c3d file
 
     # get path to validation c3d files
-    ROOT_DIR = find_vcs_root(os.path.dirname(__file__))
+    ROOT_DIR = find_repo_root(os.path.dirname(__file__))
     DATA_DIR = os.path.join(ROOT_DIR, validation_dir)
 
     for subject in os.listdir(DATA_DIR):

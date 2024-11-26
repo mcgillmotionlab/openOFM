@@ -2,7 +2,7 @@ import yaml
 import os
 
 from OFM.virtual_markers import create_virtual_markers
-from utils.utils import c3d_to_dict, find_vcs_root, get_python_settings,  make_plot_title
+from utils.utils import c3d_to_dict, find_repo_root, get_python_settings,  make_plot_title
 from PiG.pig import hipjointcentrePiG_data, kneejointcenterPiG, anklejointcenterPiG
 from OFM.virtual_markers import animate_virtual_markers
 from OFM.segments import segments
@@ -11,7 +11,7 @@ from plotting.plotting import plot_angles
 
 
 # path to raw static file, raw dynamic file, and settings file
-DATA_DIR = os.path.join(find_vcs_root(os.path.dirname(__file__)), 'Data_Sample', 'Sample')
+DATA_DIR = os.path.join(find_repo_root(os.path.dirname(__file__)), 'Data_Sample', 'Sample')
 fl_static = os.path.join(DATA_DIR, 'static.c3d')
 fl_dynamic = os.path.join(DATA_DIR, 'dynamic.c3d')
 settings_file_path = os.path.join(DATA_DIR, 'settings.yml')

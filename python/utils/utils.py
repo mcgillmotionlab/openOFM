@@ -3,15 +3,14 @@ import numpy as np
 from linear_algebra.linear_algebra import nrmse
 
 
-def find_vcs_root(test, dirs=(".git",), default=None):
-    """ see https://stackoverflow.com/questions/22081209/find-the-root-of-the-git-repository-where-the-file-lives"""
+def find_repo_root(test, dirs=(".git",), default=None):
+    """ Finds full local path to root of code repository"""
     prev, test = None, os.path.abspath(test)
     while prev != test:
         if any(os.path.isdir(os.path.join(test, d)) for d in dirs):
             return test
         prev, test = test, os.path.abspath(os.path.join(test, os.pardir))
     return default or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 
 def c3d_to_dict(fl, verbose=False):
@@ -143,7 +142,7 @@ def get_data(settings):
         raise IOError('Trial type {} incorrect, must be "static" or "dynamic".'.format(trial_type))
 
     # 1.0 get path to c3d files
-    ROOT_DIR = find_vcs_root(os.path.dirname(__file__))
+    ROOT_DIR = find_repo_root(os.path.dirname(__file__))
     DATA_DIR = os.path.join(ROOT_DIR, settings['data_dir'])
 
     # 2.0 Load data and compute ofm
@@ -198,7 +197,7 @@ def get_data(settings):
 
 def set_data(data, settings):
     # 1.0 get path to c3d files
-    ROOT_DIR = find_vcs_root(os.path.dirname(__file__))
+    ROOT_DIR = find_repo_root(os.path.dirname(__file__))
     DATA_DIR = os.path.join(ROOT_DIR, settings['data_dir'])
 
     # create new dictionary with only openOFM processing parameters
@@ -290,7 +289,7 @@ def get_python_settings(args):
     import yaml
 
     # extract arguments to dictionary
-    root_dir = find_vcs_root(os.path.dirname(__file__))
+    root_dir = find_repo_root(os.path.dirname(__file__))
     data_dir = os.path.join(root_dir, args['data_dir'])
     yaml_file_path = os.path.join(data_dir, 'settings.yml')
     with open(yaml_file_path, "r") as yaml_file:
