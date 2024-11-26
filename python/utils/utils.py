@@ -10,7 +10,8 @@ def find_vcs_root(test, dirs=(".git",), default=None):
         if any(os.path.isdir(os.path.join(test, d)) for d in dirs):
             return test
         prev, test = test, os.path.abspath(os.path.join(test, os.pardir))
-    return default
+    return default or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 
 def c3d_to_dict(fl, verbose=False):
