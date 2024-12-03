@@ -101,8 +101,12 @@ def getDir(data, ch=None):
             RPSI = data['RPSI']
             LPSI = data['LPSI']
             vec = (RPSI + LPSI) / 2
-        else:
+        elif 'SACR' in data:
             vec = data['SACR']
+        elif 'RPCA' in data:
+            vec = data['RPCA']
+        else:
+            raise ValueError
     else:
         vec = data[ch]
 
@@ -126,6 +130,8 @@ def getDir(data, ch=None):
         direction = 'neg'  # negative slope
     else:
         direction = 'pos'
+
+    # todo implement z direction
 
     walkDir = axis + direction
 
