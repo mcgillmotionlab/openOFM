@@ -201,11 +201,6 @@ def get_data(settings):
                                       LUseFloorFF=data['parameters']['PROCESSING']['LUseFloorFF']['value'][0].astype(int),
                                       RUseFloorFF=data['parameters']['PROCESSING']['RUseFloorFF']['value'][0].astype(int),
                                       )
-
-    # create empty 'PROCESSING' dict if the .c3d has not been processed at all previously
-    if 'PROCESSING' not in data['parameters']:
-        data['parameters']['PROCESSING'] = {}
-
     if trial_type == 'dynamic':
         fl = os.path.join(DATA_DIR, 'parameters.txt')
         with open(fl, 'r') as f:
@@ -222,24 +217,18 @@ def get_data(settings):
 
         if settings['use_settings']:
             print('Loading anthropometric values from settings dictionary')
-            data['parameters']['PROCESSING']['MarkerDiameter'] = {}
             data['parameters']['PROCESSING']['MarkerDiameter']['value'] = settings['subject_params']['MarkerDiameter']
-            if settings['version'] == '1.0':
-                data['parameters']['PROCESSING']['InterAsisDistance']['value'] = settings['subject_params']['InterAsisDistance']
-                data['parameters']['PROCESSING']['RLegLength']['value'] = settings['subject_params']['RLegLength']
-                data['parameters']['PROCESSING']['LLegLength']['value'] = settings['subject_params']['LLegLength']
-                data['parameters']['PROCESSING']['RKneeWidth']['value'] = settings['subject_params']['RKneeWidth']
-                data['parameters']['PROCESSING']['LKneeWidth']['value'] = settings['subject_params']['LKneeWidth']
-                data['parameters']['PROCESSING']['RAnkleWidth']['value'] = settings['subject_params']['RAnkleWidth']
-                data['parameters']['PROCESSING']['LAnkleWidth']['value'] = settings['subject_params']['LAnkleWidth']
-                data['parameters']['PROCESSING']['RThighRotation']['value'] = settings['subject_params'][
-                    'RThighRotation']
-                data['parameters']['PROCESSING']['LThighRotation']['value'] = settings['subject_params'][
-                    'LThighRotation']
-                data['parameters']['PROCESSING']['RShankRotation']['value'] = settings['subject_params'][
-                    'RShankRotation']
-                data['parameters']['PROCESSING']['LShankRotation']['value'] = settings['subject_params'][
-                    'LShankRotation']
+            data['parameters']['PROCESSING']['InterAsisDistance']['value'] = settings['subject_params']['InterAsisDistance']
+            data['parameters']['PROCESSING']['RLegLength']['value'] = settings['subject_params']['RLegLength']
+            data['parameters']['PROCESSING']['LLegLength']['value'] = settings['subject_params']['LLegLength']
+            data['parameters']['PROCESSING']['RKneeWidth']['value'] = settings['subject_params']['RKneeWidth']
+            data['parameters']['PROCESSING']['LKneeWidth']['value'] = settings['subject_params']['LKneeWidth']
+            data['parameters']['PROCESSING']['RAnkleWidth']['value'] = settings['subject_params']['RAnkleWidth']
+            data['parameters']['PROCESSING']['LAnkleWidth']['value'] = settings['subject_params']['LAnkleWidth']
+            data['parameters']['PROCESSING']['RThighRotation']['value'] = settings['subject_params']['RThighRotation']
+            data['parameters']['PROCESSING']['LThighRotation']['value'] = settings['subject_params']['LThighRotation']
+            data['parameters']['PROCESSING']['RShankRotation']['value'] = settings['subject_params']['RShankRotation']
+            data['parameters']['PROCESSING']['LShankRotation']['value'] = settings['subject_params']['LShankRotation']
         else:
             print('Loading anthropometric values from {}'.format(fl))
 
