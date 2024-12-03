@@ -132,6 +132,40 @@ def getDir(data, ch=None):
     return walkDir
 
 
+def getDirStat(data, ch=None):
+    """ get direction of standing based on foot markers"""
+
+    prox = data['RPCA']
+    dist = data['RD1M']
+
+    # Determine if foot is oriented along global X or Y
+    X = abs(prox[0, 0] - dist[-1, 0])
+    Y = abs(prox[0, 1] - dist[-1, 1])
+
+    if Y > X:  # standing facing Y
+        axis = 'J'
+        dim = 1
+    else:  # standing facing X
+        axis = 'I'
+        dim = 0
+
+    # todo implement z direction
+
+    # Determine which direction along the known axis the person is travelling
+    vec = dist[:, dim] - prox[:, dim]
+    indx = ~np.isnan(vec)
+    vec = np.average(vec[indx])
+
+    if vec < 0:
+        direction = 'neg'  # toe marker is "behind" heel marker
+    else:
+        direction = 'pos'
+
+    standDir = axis + direction
+
+    return standDir
+
+
 def get_data(settings):
     # extract settings
     trial_type = settings['trial_type']

@@ -1,7 +1,7 @@
 import numpy as np
 from linear_algebra.linear_algebra import static2dynamic, create_lcs, point_to_plane, replace4, \
     move_marker_gcs_2_lcs, magnitude
-from utils.utils import getDir
+from utils.utils import getDirStat
 
 
 def create_virtual_markers(sdata, settings):
@@ -136,7 +136,7 @@ def create_virtual_markers(sdata, settings):
                 # todo: check based on manuscript
                 # the anterior vector becomes the intersection of the mid-sagittal plane with
                 # a plane parallel to the floor
-                direction = getDir(sdata)
+                direction = getDirStat(sdata, settings)
                 if direction in ['Ipos', 'Ineg']:
                     [O, _, lat_ax, _, _] = create_lcs(HE1_sta, midcal - HE1_sta, PCA_sta - HE1_sta, 'xyz')
                     lat_ax = lat_ax - O
