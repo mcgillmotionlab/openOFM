@@ -56,7 +56,7 @@ def plot_angles(data, vicon_data=None, plot_title="", gsettings=None):
             ax.set_title(s + 'FF/TIB \n NRMSE = ' + data['nrmse' + side + 'FFTBA_x'], fontsize=FontSize*0.8,
                          fontname=FontName)
         else:
-            ax.set_title(s + 'LabTibia', fontsize=FontSize,fontname=FontName)
+            ax.set_title(s + 'FFTBA', fontsize=FontSize,fontname=FontName)
         ax.plot(data[side + 'FFTBA_x'], color=zcol, linestyle=zstyle, linewidth=LineWidth)
 
         if square:
@@ -68,7 +68,7 @@ def plot_angles(data, vicon_data=None, plot_title="", gsettings=None):
             ax.set_title(s + 'HF/TB \n NRMSE = ' + data['nrmse' + side + 'HFTBA_x'], fontsize=FontSize*0.8,
                          fontname=FontName)
         else:
-            ax.set_title(s + 'LabTibia', fontsize=FontSize,fontname=FontName)
+            ax.set_title(s + 'HFTBA', fontsize=FontSize,fontname=FontName)
         ax.plot(data[side + 'HFTBA_x'], color=zcol, linestyle=zstyle, linewidth=LineWidth)
         if square:
             ax.axis('square')
@@ -79,7 +79,7 @@ def plot_angles(data, vicon_data=None, plot_title="", gsettings=None):
             ax.set_title(s + 'FF/HF \n NRMSE = ' + data['nrmse' + side + 'FFHFA_x'], fontsize=FontSize*0.8,
                          fontname=FontName)
         else:
-            ax.set_title(s + 'LabTibia', fontsize=FontSize,fontname=FontName)
+            ax.set_title(s + 'FFHFA', fontsize=FontSize,fontname=FontName)
         ax.plot(data[side + 'FFHFA_x'], color=zcol, linestyle=zstyle, linewidth=LineWidth)
         if square:
             ax.axis('square')
@@ -90,7 +90,7 @@ def plot_angles(data, vicon_data=None, plot_title="", gsettings=None):
             ax.set_title(s + 'HX/FF \n NRMSE = ' + data['nrmse' + side + 'HXFFA_x'], fontsize=FontSize*0.8,
                          fontname=FontName)
         else:
-            ax.set_title(s + 'LabTibia', fontsize=FontSize,fontname=FontName)
+            ax.set_title(s + 'HXFFA', fontsize=FontSize,fontname=FontName)
         ax.plot(data[side + 'HXFFA_x'], color=zcol, linestyle=zstyle, linewidth=LineWidth)
         if square:
             ax.axis('square')
