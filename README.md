@@ -69,3 +69,7 @@ tings.manualAnthro (line 9) to True, and add the measure to section
 Note, the ``openOFM_process.m`` should be modified for use with a user’s own
 data as it defaults to running version 1.1 on the Data_Sample participant
 with placeholder values in the settings.
+
+## Citation
+If openOFM was useful to you, please cite our work: Dixon, P. C., Drew, E. E., McBride, S. P., Harrington, M., Stebbins, J., & Zavatsky, A. B. (2025). OpenOFM: an open-source implementation of the multi-segment Oxford Foot Model. Computer Methods in Biomechanics and Biomedical Engineering, 1-14.
+https://doi.org/10.1080/10255842.2024.2448558
