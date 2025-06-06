@@ -1,6 +1,7 @@
 # openOFM
-Code repository for the openOFM project. See manuscript "openOFM: an open-source implementation of the Oxford 
-multi-segment foot model" for full mathematical details and further instructions.
+Code repository for the openOFM project. See manuscript below for full mathematical details and further instructions:
+
+Dixon, P. C., Drew, E. E., McBride, S. P., Harrington, M., Stebbins, J., & Zavatsky, A. B. (2025). OpenOFM: an open-source implementation of the multi-segment Oxford Foot Model. Computer Methods in Biomechanics and Biomedical Engineering, 1-14. https://doi.org/10.1080/10255842.2024.2448558
 
 ## Running in Python
 
