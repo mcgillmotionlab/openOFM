@@ -32,7 +32,35 @@ def static2dynamic(o_dyn, x_dyn, y_dyn, z_dyn, mrk_lcl_av):
     return mrk_dyn
 
 
+def compare(name, a, b, atol=1e-12, rtol=1e-12):
+    a = np.asarray(a)
+    b = np.asarray(b)
+    if a.size == b.size and a.shape != b.shape:
+        if a.shape == (3 * b.shape[1], 3) and b.shape[0] == 3:
+            a = a.reshape(3, -1, 3)
+        elif b.shape == (3 * a.shape[1], 3) and a.shape[0] == 3:
+            b = b.reshape(3, -1, 3)
+
+    if not np.allclose(a, b, atol=atol, rtol=rtol):
+        max_diff = np.max(np.abs(a - b))
+        print(f"{name}  DIFFER!  max |diff| = {max_diff:.2e}")
+        print(f"   shape a: {a.shape}   shape b: {b.shape}")
+    else:
+        print(f"{name}  identical (within atol={atol}, rtol={rtol})")
+
+
 def create_lcs(O, vec1, vec2, order):
+    O, lcs1, lcs2, lcs3, axes_system = create_lcs_original(O, vec1, vec2, order)
+    O_r, lcs1_r, lcs2_r, lcs3_r, axes_system_r = create_lcs_refactored(O, vec1, vec2, order)
+    # compare("O",          O,   O_r)
+    # compare("lcs1",       lcs1,    lcs1_r)
+    # compare("lcs2",       lcs2,    lcs2_r)
+    # compare("lcs3",       lcs3,    lcs3_r)
+    # compare("axes_system", axes_system, axes_system_r)
+
+    return O, lcs1, lcs2, lcs3, axes_system
+
+def create_lcs_original(O, vec1, vec2, order):
     """
      creates a local coordinate system.
      ARGUMENTS
@@ -93,6 +121,67 @@ def create_lcs(O, vec1, vec2, order):
 
     return O, lcs1, lcs2, lcs3, axes_system
 
+
+def create_lcs_refactored(O, vec1, vec2, order):
+    """
+    Creates a local coordinate system (LCS) from origin and two vectors with specified axis order.
+
+    ARGUMENTS
+        O       ... n x 3 array: origin of the local coordinate system
+        vec1    ... n x 3 array: primary vector defining the first specified axis
+        vec2    ... n x 3 array: secondary vector used to define the plane
+        order   ... str: axis order, one of 'xyz', 'xzy', 'zxy', 'zyx', 'yzx', 'yxz'
+
+    RETURNS
+        O            ... n x 3 array: origin
+        lcs1         ... n x 3 array: marker on first axis
+        lcs2         ... n x 3 array: marker on second axis
+        lcs3         ... n x 3 array: marker on third axis
+        axes_system  ... 3 x n x 3 array: stacked unit axes [axis1, axis2, axis3]
+    """
+    # Ensure inputs are 2D (n x 3)
+    O    = np.atleast_2d(O)
+    vec1 = np.atleast_2d(vec1)
+    vec2 = np.atleast_2d(vec2)
+
+    if O.shape[1] != 3 or vec1.shape[1] != 3 or vec2.shape[1] != 3:
+        raise ValueError("All inputs must be n x 3 arrays (or 1D vectors of length 3).")
+    if O.shape[0] != vec1.shape[0] or O.shape[0] != vec2.shape[0]:
+        raise ValueError("All inputs must have the same number of rows.")
+
+    n = O.shape[0]
+    axis1 = np.zeros_like(O)
+    axis2 = np.zeros_like(O)
+    axis3 = np.zeros_like(O)
+
+    # Normalize input vectors
+    v1 = makeunit(vec1)  # Primary direction
+    v2 = makeunit(vec2)  # Secondary direction
+
+    # Define axis computation based on order
+    orders = {
+        'xyz': lambda: (v1,                       makeunit(np.cross(v2, v1)), makeunit(np.cross(v1, makeunit(np.cross(v2, v1))))),
+        'xzy': lambda: (v1,                       makeunit(np.cross(makeunit(np.cross(v1, v2)), v1)), makeunit(np.cross(v1, v2))),
+        'zxy': lambda: (makeunit(np.cross(v2, v1)), makeunit(np.cross(v1, makeunit(np.cross(v2, v1)))), v1),
+        'zyx': lambda: (makeunit(np.cross(v1, makeunit(np.cross(v2, v1)))), makeunit(np.cross(v2, v1)), v1),
+        'yzx': lambda: (makeunit(np.cross(makeunit(np.cross(v2, v1)), v1)), v1, makeunit(np.cross(v2, v1))),
+        'yxz': lambda: (makeunit(np.cross(v2, v1)), v1, makeunit(np.cross(makeunit(np.cross(v2, v1)), v1))),
+    }
+
+    if order not in orders:
+        raise ValueError("Invalid order. Must be 'xyz', 'xzy', 'zxy', 'zyx', 'yzx', or 'yxz'.")
+
+    axis1[:], axis2[:], axis3[:] = orders[order]()
+
+    # Create markers at unit length along each axis
+    lcs1 = O + axis1
+    lcs2 = O + axis2
+    lcs3 = O + axis3
+
+    # Stack axes as (3, n, 3): [axis1, axis2, axis3]
+    axes_system = np.stack([axis1, axis2, axis3], axis=0)
+
+    return O, lcs1, lcs2, lcs3, axes_system
 
 def angle(m1, m2, ref='deg'):
     """
@@ -191,98 +280,75 @@ def ctransform(c1, c2, vec):
 
 
 def replace4(p1, p2, p3, p4):
-    # Move p1 to local system 234
+    n = p1.shape[0]
+
+    # Buffers for local coordinates (p1 in system 234, p2 in 341, p3 in 412, p4 in 123)
     p1_vec_lcl = np.zeros_like(p1)
-    for i in range(p1.shape[0]):
-        # Create system 234 for each frame of trial
+    p2_vec_lcl = np.zeros_like(p2)
+    p3_vec_lcl = np.zeros_like(p3)
+    p4_vec_lcl = np.zeros_like(p4)
+
+    # First pass: compute local coordinates for each point-system pair, one loop over frames
+    for i in range(n):
+        # system 234 (origin p3): axes built from vectors p2-p3 and p3-p4
         _, _, _, _, s234 = create_lcs(p3[i, :], p2[i, :] - p3[i, :], p3[i, :] - p4[i, :], 'xyz')
-        # Transform to local for each frame of trial
-        p1_vec_lcl[i, :] = ctransform(gunit(), s234, p1[i, :] - p3[i, :])
+        p1_vec_lcl[i, :] = ctransform(gunit(), s234, np.expand_dims(p1[i, :] - p3[i, :], axis=0))[0]
+        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
+        p2_vec_lcl[i, :] = ctransform(gunit(), s341, np.expand_dims(p2[i, :] - p4[i, :], axis=0))[0]
+        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
+        p3_vec_lcl[i, :] = ctransform(gunit(), s412, np.expand_dims(p3[i, :] - p1[i, :], axis=0))[0]
+        _, _, _, _, s123 = create_lcs(p2[i, :], p1[i, :] - p2[i, :], p2[i, :] - p3[i, :], 'xyz')
+        p4_vec_lcl[i, :] = ctransform(gunit(), s123, np.expand_dims(p4[i, :] - p2[i, :], axis=0))[0]
 
-    # Calculate average location of p1 in system 234
-    if p1.shape[0] > 1:
+    # Compute average local positions (over frames) for each point
+    if n > 1:
         p1_vec_lcl_av = np.mean(p1_vec_lcl, axis=0)
+        p2_vec_lcl_av = np.mean(p2_vec_lcl, axis=0)
+        p3_vec_lcl_av = np.mean(p3_vec_lcl, axis=0)
+        p4_vec_lcl_av = np.mean(p4_vec_lcl, axis=0)
     else:
-        p1_vec_lcl_av = p1_vec_lcl
+        # keep shape (1,3) semantics consistent with original: leave as row vectors
+        p1_vec_lcl_av = p1_vec_lcl.reshape(3,)
+        p2_vec_lcl_av = p2_vec_lcl.reshape(3,)
+        p3_vec_lcl_av = p3_vec_lcl.reshape(3,)
+        p4_vec_lcl_av = p4_vec_lcl.reshape(3,)
 
-    # Move the average location of p1 in system 234 back to global
+    # Buffers for reconstructed global positions and final replacements
     p1_vec_gbl = np.zeros_like(p1)
     new_p1 = np.zeros_like(p1)
     rep_p1 = np.zeros_like(p1)
-    for i in range(p1.shape[0]):
-        # Create system 234 for each frame of trial
-        _, _, _, _, s234 = create_lcs(p3[i, :], p2[i, :] - p3[i, :], p3[i, :] - p4[i, :], 'xyz')
-        # Transform average location of p1 in system 234 back to global for every frame of trial
-        p1_vec_gbl[i, :] = ctransform(s234, gunit(), p1_vec_lcl_av)
-        # Add position back to local origin to obtain marker position
-        new_p1[i, :] = p1_vec_gbl[i, :] + p3[i, :]
-        # Create average of new_p1 and original p1
-        rep_p1[i, :] = (new_p1[i, :] + p1[i, :]) / 2
-
-    # Create system 341
-    p2_vec_lcl = np.zeros_like(p2)
-    for i in range(p2.shape[0]):
-        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
-        p2_vec_lcl[i, :] = ctransform(gunit(), s341, p2[i, :] - p4[i, :])
-
-    if p2.shape[0] > 1:
-        p2_vec_lcl_av = np.mean(p2_vec_lcl, axis=0)
-    else:
-        p2_vec_lcl_av = p2_vec_lcl
 
     p2_vec_gbl = np.zeros_like(p2)
     new_p2 = np.zeros_like(p2)
     rep_p2 = np.zeros_like(p2)
-    for i in range(p2.shape[0]):
-        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
-        p2_vec_gbl[i, :] = ctransform(s341, gunit(), p2_vec_lcl_av)
-        new_p2[i, :] = p2_vec_gbl[i, :] + p4[i, :]
-        rep_p2[i, :] = (new_p2[i, :] + p2[i, :]) / 2
-
-    # Create system 412
-    p3_vec_lcl = np.zeros_like(p3)
-    for i in range(p3.shape[0]):
-        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
-        p3_vec_lcl[i, :] = ctransform(gunit(), s412, p3[i, :] - p1[i, :])
-
-    if p3.shape[0] > 1:
-        p3_vec_lcl_av = np.mean(p3_vec_lcl, axis=0)
-    else:
-        p3_vec_lcl_av = p3_vec_lcl
 
     p3_vec_gbl = np.zeros_like(p3)
     new_p3 = np.zeros_like(p3)
     rep_p3 = np.zeros_like(p3)
-    for i in range(p3.shape[0]):
-        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
-        p3_vec_gbl[i, :] = ctransform(s412, gunit(), p3_vec_lcl_av)
-        new_p3[i, :] = p3_vec_gbl[i, :] + p1[i, :]
-        rep_p3[i, :] = (new_p3[i, :] + p3[i, :]) / 2
-
-    # Create system 123
-    p4_vec_lcl = np.zeros_like(p4)
-    for i in range(p4.shape[0]):
-        _, _, _, _, s123 = create_lcs(p2[i, :], p1[i, :] - p2[i, :], p2[i, :] - p3[i, :], 'xyz')
-        p4_vec_lcl[i, :] = ctransform(gunit(), s123, p4[i, :] - p2[i, :])
-
-    if p4.shape[0] > 1:
-        p4_vec_lcl_av = np.mean(p4_vec_lcl, axis=0)
-    else:
-        p4_vec_lcl_av = p4_vec_lcl
 
     p4_vec_gbl = np.zeros_like(p4)
     new_p4 = np.zeros_like(p4)
     rep_p4 = np.zeros_like(p4)
-    for i in range(p4.shape[0]):
+
+    # Second pass: transform averaged local positions back to global and compute replacements
+    for i in range(n):
+        # s234 -> place averaged p1 back into global (origin p3)
+        _, _, _, _, s234 = create_lcs(p3[i, :], p2[i, :] - p3[i, :], p3[i, :] - p4[i, :], 'xyz')
+        p1_vec_gbl[i, :] = ctransform(s234, gunit(), np.expand_dims(p1_vec_lcl_av, axis=0))[0]
+        new_p1[i, :] = p1_vec_gbl[i, :] + p3[i, :]
+        rep_p1[i, :] = (new_p1[i, :] + p1[i, :]) / 2
+        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
+        p2_vec_gbl[i, :] = ctransform(s341, gunit(), np.expand_dims(p2_vec_lcl_av, axis=0))[0]
+        new_p2[i, :] = p2_vec_gbl[i, :] + p4[i, :]
+        rep_p2[i, :] = (new_p2[i, :] + p2[i, :]) / 2
+        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
+        p3_vec_gbl[i, :] = ctransform(s412, gunit(), np.expand_dims(p3_vec_lcl_av, axis=0))[0]
+        new_p3[i, :] = p3_vec_gbl[i, :] + p1[i, :]
+        rep_p3[i, :] = (new_p3[i, :] + p3[i, :]) / 2
         _, _, _, _, s123 = create_lcs(p2[i, :], p1[i, :] - p2[i, :], p2[i, :] - p3[i, :], 'xyz')
-        p4_vec_gbl[i, :] = ctransform(s123, gunit(), p4_vec_lcl_av)
+        p4_vec_gbl[i, :] = ctransform(s123, gunit(), np.expand_dims(p4_vec_lcl_av, axis=0))[0]
         new_p4[i, :] = p4_vec_gbl[i, :] + p2[i, :]
         rep_p4[i, :] = (new_p4[i, :] + p4[i, :]) / 2
-
-    # rep_p1 = p1
-    # rep_p2 = p2
-    # rep_p3 = p3
-    # rep_p4 = p4
 
     return rep_p1, rep_p2, rep_p3, rep_p4
 
