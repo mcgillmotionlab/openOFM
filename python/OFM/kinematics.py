@@ -189,75 +189,50 @@ def makeax(pax, dax):
 
     return floatax, floatax_isb, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z
 
-
 def refsystem(data, KIN, version):
-    """ update reference system to match oxford food model"""
-
+    """Update reference system to match Oxford Foot Model."""
     direction = getDir(data)
 
-    if direction == 'Ipos':
-        # todo : test this direction
-        KIN['RightTibiaLab']['flx'] = KIN['RightTibiaLab']['flx_i']
-        KIN['RightTibiaLab']['abd'] = - KIN['RightTibiaLab']['abd_i']
-        KIN['RightTibiaLab']['tw'] = KIN['RightTibiaLab']['tw_i']
+    # Define direction mapping for tibia angles
+    dir_map = {
+        'Ipos': {
+            'RightTibiaLab': {'flx': ('flx_i', 1), 'abd': ('abd_i', -1), 'tw': ('tw_i', 1)},
+            'LeftTibiaLab':  {'flx': ('flx_i', 1), 'abd': ('abd_i', 1),  'tw': ('tw_i', -1)},
+        },
+        'Ineg': {
+            'RightTibiaLab': {'flx': ('flx_i', -1), 'abd': ('abd_i', 1),  'tw': ('tw_i', -1)},
+            'LeftTibiaLab':  {'flx': ('flx_i', -1), 'abd': ('abd_i', -1), 'tw': ('tw_i', 1)},
+        },
+        'Jpos': {
+            'RightTibiaLab': {'flx': ('flx_j', 1),  'abd': ('abd_j', 1),  'tw': ('tw_j', -1)},
+            'LeftTibiaLab':  {'flx': ('flx_j', 1),  'abd': ('abd_j', -1), 'tw': ('tw_j', 1)},
+        },
+        'Jneg': {
+            'RightTibiaLab': {'flx': ('flx_j', -1), 'abd': ('abd_j', -1), 'tw': ('tw_j', 1)},
+            'LeftTibiaLab':  {'flx': ('flx_j', -1), 'abd': ('abd_j', 1),  'tw': ('tw_j', -1)},
+        }
+    }
 
-        KIN['LeftTibiaLab']['flx'] = KIN['LeftTibiaLab']['flx_i']
-        KIN['LeftTibiaLab']['abd'] = KIN['LeftTibiaLab']['abd_i']
-        KIN['LeftTibiaLab']['tw'] = -KIN['LeftTibiaLab']['tw_i']
+    # Apply direction transformation if applicable
+    if direction in dir_map:
+        for segment, angles in dir_map[direction].items():
+            for angle, (src, sign) in angles.items():
+                KIN[segment][angle] = sign * KIN[segment][src]
 
-    elif direction == 'Ineg':
-        KIN['RightTibiaLab']['flx'] = -KIN['RightTibiaLab']['flx_i']
-        KIN['RightTibiaLab']['abd'] = KIN['RightTibiaLab']['abd_i']
-        KIN['RightTibiaLab']['tw'] = -KIN['RightTibiaLab']['tw_i']
+    # Handle version-based modifications
+    if version in ('1.0', '1.1'):
+        left_segments = ['LeftAnkleOFM', 'LeftFFTBA', 'LeftMidFoot']
+        for seg in left_segments:
+            KIN[seg]['abd'] *= -1
+            KIN[seg]['tw'] *= -1
 
-        KIN['LeftTibiaLab']['flx'] = -KIN['LeftTibiaLab']['flx_i']
-        KIN['LeftTibiaLab']['abd'] = -KIN['LeftTibiaLab']['abd_i']
-        KIN['LeftTibiaLab']['tw'] = KIN['LeftTibiaLab']['tw_i']
+        # Version-specific parts
+        if version == '1.0':
+            KIN['LeftMTP']['abd'] *= -1
+            KIN['LeftMTP']['tw'] *= -1
+        elif version == '1.1':
+            KIN['RightMTP']['abd'] *= -1
 
-    elif direction == 'Jpos':
-        KIN['RightTibiaLab']['flx'] = KIN['RightTibiaLab']['flx_j']
-        KIN['RightTibiaLab']['abd'] = KIN['RightTibiaLab']['abd_j']
-        KIN['RightTibiaLab']['tw'] = - KIN['RightTibiaLab']['tw_j']
-
-        KIN['LeftTibiaLab']['flx'] = KIN['LeftTibiaLab']['flx_j']
-        KIN['LeftTibiaLab']['abd'] = - KIN['LeftTibiaLab']['abd_j']
-        KIN['LeftTibiaLab']['tw'] = KIN['LeftTibiaLab']['tw_j']
-
-    elif direction == 'Jneg':
-        KIN['RightTibiaLab']['flx'] = -KIN['RightTibiaLab']['flx_j']
-        KIN['RightTibiaLab']['abd'] = - KIN['RightTibiaLab']['abd_j']
-        KIN['RightTibiaLab']['tw'] = KIN['RightTibiaLab']['tw_j']
-
-        KIN['LeftTibiaLab']['flx'] = - KIN['LeftTibiaLab']['flx_j']
-        KIN['LeftTibiaLab']['abd'] = KIN['LeftTibiaLab']['abd_j']
-        KIN['LeftTibiaLab']['tw'] = - KIN['LeftTibiaLab']['tw_j']
-
-    if version == '1.0':
-        KIN['LeftAnkleOFM']['abd'] = - KIN['LeftAnkleOFM']['abd']
-        KIN['LeftAnkleOFM']['tw'] = - KIN['LeftAnkleOFM']['tw']
-
-        KIN['LeftFFTBA']['abd'] = -KIN['LeftFFTBA']['abd']
-        KIN['LeftFFTBA']['tw'] = -KIN['LeftFFTBA']['tw']
-
-        KIN['LeftMidFoot']['abd'] = -KIN['LeftMidFoot']['abd']
-        KIN['LeftMidFoot']['tw'] = -KIN['LeftMidFoot']['tw']
-
-        KIN['LeftMTP']['abd'] = -KIN['LeftMTP']['abd']
-        KIN['LeftMTP']['tw'] = -KIN['LeftMTP']['tw']
-
-    elif version == '1.1':
-        KIN['LeftAnkleOFM']['abd'] = -KIN['LeftAnkleOFM']['abd']
-        KIN['LeftAnkleOFM']['tw'] = -KIN['LeftAnkleOFM']['tw']
-
-        KIN['LeftFFTBA']['abd'] = -KIN['LeftFFTBA']['abd']
-        KIN['LeftFFTBA']['tw'] = -KIN['LeftFFTBA']['tw']
-
-        KIN['LeftMidFoot']['abd'] = -KIN['LeftMidFoot']['abd']
-        KIN['LeftMidFoot']['tw'] = -KIN['LeftMidFoot']['tw']
-
-        KIN['RightMTP']['abd'] = -KIN['RightMTP']['abd']
-
-    # ----4 : ADD COMPUTED ANGLES TO DATA STRUCT------------------------------------
+    # ADD COMPUTED ANGLES TO DATA STRUCT
     data = addchannelsgs(data, KIN)
-
     return data, KIN
