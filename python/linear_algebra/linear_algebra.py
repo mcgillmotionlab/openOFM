@@ -31,7 +31,6 @@ def static2dynamic(o_dyn, x_dyn, y_dyn, z_dyn, mrk_lcl_av):
 
     return mrk_dyn
 
-
 def create_lcs(O, vec1, vec2, order):
     """
      creates a local coordinate system.
@@ -166,123 +165,90 @@ def ctransform(c1, c2, vec):
       vout  ... n x 3 matrix in c2 rows = samples; columns X Y Z
     """
 
-    if type(c1) == np.ndarray and type(c2) == np.ndarray:
-        # unit vectors for coordinate system 1
-        ic1 = c1[0, :]
-        jc1 = c1[1, :]
-        kc1 = c1[2, :]
+    # Use isinstance for more robust type checking (handles subclasses)
+    if not (isinstance(c1, np.ndarray) and isinstance(c2, np.ndarray)):
+        print(f'type of c1: {type(c1)}')
+        print(f'type of c2: {type(c2)}')
+        raise TypeError('inputs must be numpy arrays')
 
-        # unit vectors for coordinate system 2
-        ic2 = c2[0, :]
-        jc2 = c2[1, :]
-        kc2 = c2[2, :]
+    t = c1 @ c2.T
 
-        # Transformation matrix
-        t = np.array([[np.dot(ic1, ic2), np.dot(ic1, jc2), np.dot(ic1, kc2)],
-                      [np.dot(jc1, ic2), np.dot(jc1, jc2), np.dot(jc1, kc2)],
-                      [np.dot(kc1, ic2), np.dot(kc1, jc2), np.dot(kc1, kc2)]])
-
-        vec2 = np.matmul(vec, t)
-        return vec2
-    else:
-        print('type of c1: {}'.format(type(c1)))
-        print('type of c2: {}'.format(type(c2)))
-        raise IOError('inputs must be arrays')
+    # Apply the transformation.
+    vec2 = vec @ t
+    
+    return vec2
 
 
 def replace4(p1, p2, p3, p4):
-    # Move p1 to local system 234
+    n = p1.shape[0]
+
+    # Buffers for local coordinates (p1 in system 234, p2 in 341, p3 in 412, p4 in 123)
     p1_vec_lcl = np.zeros_like(p1)
-    for i in range(p1.shape[0]):
-        # Create system 234 for each frame of trial
+    p2_vec_lcl = np.zeros_like(p2)
+    p3_vec_lcl = np.zeros_like(p3)
+    p4_vec_lcl = np.zeros_like(p4)
+
+    # First pass: compute local coordinates for each point-system pair, one loop over frames
+    for i in range(n):
+        # system 234 (origin p3): axes built from vectors p2-p3 and p3-p4
         _, _, _, _, s234 = create_lcs(p3[i, :], p2[i, :] - p3[i, :], p3[i, :] - p4[i, :], 'xyz')
-        # Transform to local for each frame of trial
-        p1_vec_lcl[i, :] = ctransform(gunit(), s234, p1[i, :] - p3[i, :])
+        p1_vec_lcl[i, :] = ctransform(gunit(), s234, np.expand_dims(p1[i, :] - p3[i, :], axis=0))[0]
+        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
+        p2_vec_lcl[i, :] = ctransform(gunit(), s341, np.expand_dims(p2[i, :] - p4[i, :], axis=0))[0]
+        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
+        p3_vec_lcl[i, :] = ctransform(gunit(), s412, np.expand_dims(p3[i, :] - p1[i, :], axis=0))[0]
+        _, _, _, _, s123 = create_lcs(p2[i, :], p1[i, :] - p2[i, :], p2[i, :] - p3[i, :], 'xyz')
+        p4_vec_lcl[i, :] = ctransform(gunit(), s123, np.expand_dims(p4[i, :] - p2[i, :], axis=0))[0]
 
-    # Calculate average location of p1 in system 234
-    if p1.shape[0] > 1:
+    # Compute average local positions (over frames) for each point
+    if n > 1:
         p1_vec_lcl_av = np.mean(p1_vec_lcl, axis=0)
+        p2_vec_lcl_av = np.mean(p2_vec_lcl, axis=0)
+        p3_vec_lcl_av = np.mean(p3_vec_lcl, axis=0)
+        p4_vec_lcl_av = np.mean(p4_vec_lcl, axis=0)
     else:
-        p1_vec_lcl_av = p1_vec_lcl
+        # keep shape (1,3) semantics consistent with original: leave as row vectors
+        p1_vec_lcl_av = p1_vec_lcl.reshape(3,)
+        p2_vec_lcl_av = p2_vec_lcl.reshape(3,)
+        p3_vec_lcl_av = p3_vec_lcl.reshape(3,)
+        p4_vec_lcl_av = p4_vec_lcl.reshape(3,)
 
-    # Move the average location of p1 in system 234 back to global
+    # Buffers for reconstructed global positions and final replacements
     p1_vec_gbl = np.zeros_like(p1)
     new_p1 = np.zeros_like(p1)
     rep_p1 = np.zeros_like(p1)
-    for i in range(p1.shape[0]):
-        # Create system 234 for each frame of trial
-        _, _, _, _, s234 = create_lcs(p3[i, :], p2[i, :] - p3[i, :], p3[i, :] - p4[i, :], 'xyz')
-        # Transform average location of p1 in system 234 back to global for every frame of trial
-        p1_vec_gbl[i, :] = ctransform(s234, gunit(), p1_vec_lcl_av)
-        # Add position back to local origin to obtain marker position
-        new_p1[i, :] = p1_vec_gbl[i, :] + p3[i, :]
-        # Create average of new_p1 and original p1
-        rep_p1[i, :] = (new_p1[i, :] + p1[i, :]) / 2
-
-    # Create system 341
-    p2_vec_lcl = np.zeros_like(p2)
-    for i in range(p2.shape[0]):
-        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
-        p2_vec_lcl[i, :] = ctransform(gunit(), s341, p2[i, :] - p4[i, :])
-
-    if p2.shape[0] > 1:
-        p2_vec_lcl_av = np.mean(p2_vec_lcl, axis=0)
-    else:
-        p2_vec_lcl_av = p2_vec_lcl
 
     p2_vec_gbl = np.zeros_like(p2)
     new_p2 = np.zeros_like(p2)
     rep_p2 = np.zeros_like(p2)
-    for i in range(p2.shape[0]):
-        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
-        p2_vec_gbl[i, :] = ctransform(s341, gunit(), p2_vec_lcl_av)
-        new_p2[i, :] = p2_vec_gbl[i, :] + p4[i, :]
-        rep_p2[i, :] = (new_p2[i, :] + p2[i, :]) / 2
-
-    # Create system 412
-    p3_vec_lcl = np.zeros_like(p3)
-    for i in range(p3.shape[0]):
-        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
-        p3_vec_lcl[i, :] = ctransform(gunit(), s412, p3[i, :] - p1[i, :])
-
-    if p3.shape[0] > 1:
-        p3_vec_lcl_av = np.mean(p3_vec_lcl, axis=0)
-    else:
-        p3_vec_lcl_av = p3_vec_lcl
 
     p3_vec_gbl = np.zeros_like(p3)
     new_p3 = np.zeros_like(p3)
     rep_p3 = np.zeros_like(p3)
-    for i in range(p3.shape[0]):
-        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
-        p3_vec_gbl[i, :] = ctransform(s412, gunit(), p3_vec_lcl_av)
-        new_p3[i, :] = p3_vec_gbl[i, :] + p1[i, :]
-        rep_p3[i, :] = (new_p3[i, :] + p3[i, :]) / 2
-
-    # Create system 123
-    p4_vec_lcl = np.zeros_like(p4)
-    for i in range(p4.shape[0]):
-        _, _, _, _, s123 = create_lcs(p2[i, :], p1[i, :] - p2[i, :], p2[i, :] - p3[i, :], 'xyz')
-        p4_vec_lcl[i, :] = ctransform(gunit(), s123, p4[i, :] - p2[i, :])
-
-    if p4.shape[0] > 1:
-        p4_vec_lcl_av = np.mean(p4_vec_lcl, axis=0)
-    else:
-        p4_vec_lcl_av = p4_vec_lcl
 
     p4_vec_gbl = np.zeros_like(p4)
     new_p4 = np.zeros_like(p4)
     rep_p4 = np.zeros_like(p4)
-    for i in range(p4.shape[0]):
+
+    # Second pass: transform averaged local positions back to global and compute replacements
+    for i in range(n):
+        # s234 -> place averaged p1 back into global (origin p3)
+        _, _, _, _, s234 = create_lcs(p3[i, :], p2[i, :] - p3[i, :], p3[i, :] - p4[i, :], 'xyz')
+        p1_vec_gbl[i, :] = ctransform(s234, gunit(), np.expand_dims(p1_vec_lcl_av, axis=0))[0]
+        new_p1[i, :] = p1_vec_gbl[i, :] + p3[i, :]
+        rep_p1[i, :] = (new_p1[i, :] + p1[i, :]) / 2
+        _, _, _, _, s341 = create_lcs(p4[i, :], p3[i, :] - p4[i, :], p4[i, :] - p1[i, :], 'xyz')
+        p2_vec_gbl[i, :] = ctransform(s341, gunit(), np.expand_dims(p2_vec_lcl_av, axis=0))[0]
+        new_p2[i, :] = p2_vec_gbl[i, :] + p4[i, :]
+        rep_p2[i, :] = (new_p2[i, :] + p2[i, :]) / 2
+        _, _, _, _, s412 = create_lcs(p1[i, :], p4[i, :] - p1[i, :], p1[i, :] - p2[i, :], 'xyz')
+        p3_vec_gbl[i, :] = ctransform(s412, gunit(), np.expand_dims(p3_vec_lcl_av, axis=0))[0]
+        new_p3[i, :] = p3_vec_gbl[i, :] + p1[i, :]
+        rep_p3[i, :] = (new_p3[i, :] + p3[i, :]) / 2
         _, _, _, _, s123 = create_lcs(p2[i, :], p1[i, :] - p2[i, :], p2[i, :] - p3[i, :], 'xyz')
-        p4_vec_gbl[i, :] = ctransform(s123, gunit(), p4_vec_lcl_av)
+        p4_vec_gbl[i, :] = ctransform(s123, gunit(), np.expand_dims(p4_vec_lcl_av, axis=0))[0]
         new_p4[i, :] = p4_vec_gbl[i, :] + p2[i, :]
         rep_p4[i, :] = (new_p4[i, :] + p4[i, :]) / 2
-
-    # rep_p1 = p1
-    # rep_p2 = p2
-    # rep_p3 = p3
-    # rep_p4 = p4
 
     return rep_p1, rep_p2, rep_p3, rep_p4
 
@@ -413,54 +379,51 @@ def move_marker_gcs_2_lcs(O, A, L, P, M):
     return m_lcs_static
 
 
-def rotate_axes(axes, theta, axis):
-    # Convert axis to lowercase for comparison
-    axis = axis.lower()
 
-    # Extract the specified axis from the local coordinate system
-    if axis == 'x':
-        axis_vector = axes[0, :]
-    elif axis == 'y':
-        axis_vector = axes[1, :]
-    elif axis == 'z':
-        axis_vector = axes[2, :]
-    else:
+def rotate_axes(axes, theta, axis):
+    """
+    Rotate a local coordinate system (axes) by an angle `theta` (in degrees)
+    about one of its local axes ('x', 'y', or 'z').
+
+    Parameters:
+        axes : ndarray, shape (3, 3)
+            Local coordinate system, where each row represents an axis vector.
+        theta : float
+            Rotation angle in degrees.
+        axis : str
+            Axis of rotation ('x', 'y', or 'z').
+
+    Returns:
+        rot_axes : ndarray, shape (3, 3)
+            Rotated coordinate system.
+    """
+    axis = axis.lower()
+    if axis not in ('x', 'y', 'z'):
         raise ValueError("Invalid axis. Must be 'x', 'y', or 'z'.")
 
-    # Compute axis variables
+    # Extract axis vector
+    axis_vector = axes['xyz'.index(axis), :]
     L = np.linalg.norm(axis_vector)
     a, b, c = axis_vector
-    V = np.sqrt(b ** 2 + c ** 2)
+    V = np.sqrt(b**2 + c**2)
 
-    # Rotate about the global x-axis
-    rot_x = np.array([[1, 0, 0],
-                      [0, c / V, b / V],
-                      [0, -b / V, c / V]])
+    # Handle the degenerate case when rotation axis aligns with global x
+    if np.isclose(V, 0):
+        V = 1e-12  # avoid division by zero
 
-    # Rotate about the global y-axis
-    rot_y = np.array([[V / L, 0, a / L],
-                      [0, 1, 0],
-                      [-a / L, 0, V / L]])
+    cos_t, sin_t = np.cos(np.deg2rad(theta)), np.sin(np.deg2rad(theta))
 
-    # Rotate about the global z-axis
-    rot_z = np.array([[np.cos(np.deg2rad(theta)), np.sin(np.deg2rad(theta)), 0],
-                      [-np.sin(np.deg2rad(theta)), np.cos(np.deg2rad(theta)), 0],
-                      [0, 0, 1]])
+    rot_x = np.array([[1, 0, 0], [0, c / V, b / V], [0, -b / V, c / V]])
 
-    # Reverse the rotation about the y-axis
-    rev_rot_y = np.array([[V / L, 0, -a / L],
-                          [0, 1, 0],
-                          [a / L, 0, V / L]])
+    rot_y = np.array([[V / L, 0, a / L], [0, 1, 0], [-a / L, 0, V / L]])
 
-    # Reverse the rotation about the x-axis
-    rev_rot_x = np.array([[1, 0, 0],
-                          [0, c / V, -b / V],
-                          [0, b / V, c / V]])
+    rot_z = np.array([[cos_t, sin_t, 0], [-sin_t, cos_t, 0], [0, 0, 1]])
 
-    # Create transformation matrix
-    t = np.dot(rot_x, np.dot(rot_y, np.dot(rot_z, np.dot(rev_rot_y, rev_rot_x))))
+    rev_rot_y = np.array([[V / L, 0, -a / L], [0, 1, 0], [a / L, 0, V / L]])
 
-    # Rotate axes
-    rot_axes = np.dot(axes, t)
+    rev_rot_x = np.array([[1, 0, 0], [0, c / V, -b / V], [0, b / V, c / V]])
 
-    return rot_axes
+    # Combined rotation
+    t = rot_x @ rot_y @ rot_z @ rev_rot_y @ rev_rot_x
+
+    return axes @ t
