@@ -39,8 +39,7 @@ def grood_suntay(r, jnt, version):
 
         if version == "1.0":
             if prox_bone == 'Global':
-                floatax, _, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax(pax, dax)
-                # v1.0 Global calculations
+                floatax, _, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax(pax, dax, mode='1.1')
                 flx_i = angle(dist_z, prox_x)
                 abd_i = angle(prox_y, dist_z)
                 tw_i = angle(dist_x, prox_y)
@@ -49,20 +48,17 @@ def grood_suntay(r, jnt, version):
                 tw_j = angle(dist_x, prox_x)
             
             elif prox_bone == 'TibiaOFM':
-                floatax, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax_1_0(pax, dax)
-                # v1.0 TibiaOFM calculations
+                floatax, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax(pax, dax, mode='1.0')
                 alpha = -angle(floatax, prox_x)
                 beta = angle(prox_y, dist_z)
                 gamma = angle(floatax, dist_y)
             
             else:
-                floatax, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax_1_0(pax, dax)
-                # v1.0 Else calculations
+                floatax, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax(pax, dax, mode='1.0')
                 alpha = -angle(floatax, prox_z)
                 beta = angle(prox_y, dist_z)
                 gamma = angle(floatax, dist_y)
 
-            # v1.0 KIN Assignment
             KIN[jnt_name[0]] = dict
             if prox_bone == 'Global':
                 KIN[jnt_name[0]] = {'flx_i': flx_i, 'abd_i': abd_i, 'tw_i': tw_i,
@@ -73,12 +69,9 @@ def grood_suntay(r, jnt, version):
                 KIN[jnt_name[0]] = {'flx': alpha, 'abd': beta, 'tw': gamma}
 
         elif version == "1.1":
-            # Version 1.1 LOGIC
-            # v1.1 calls makeax once at the top
-            floatax, _, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax(pax, dax)
+            floatax, _, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z = makeax(pax, dax, mode='1.1')
 
             if prox_bone == 'Global':
-                # v1.1 Global calculations
                 flx_i = angle(dist_y, prox_x)
                 abd_i = angle(prox_y, dist_y)
                 tw_i = angle(dist_x, prox_y)
@@ -86,7 +79,6 @@ def grood_suntay(r, jnt, version):
                 abd_j = angle(dist_y, prox_x)
                 tw_j = angle(dist_x, prox_x)
 
-            # v1.1 non-Global calculations
             if prox_bone == 'ForeFoot':
                 alpha = angle(floatax, prox_y)
                 beta = -angle(prox_z, dist_x)
@@ -96,7 +88,6 @@ def grood_suntay(r, jnt, version):
                 beta = - angle(prox_z, dist_x)
                 gamma = angle(floatax, dist_z)
 
-            # v1.1 KIN Assignment
             KIN[jnt_name[0]] = dict
             if prox_bone == 'Global':
                 KIN[jnt_name[0]] = {'flx_i': flx_i, 'abd_i': abd_i, 'tw_i': tw_i,
@@ -112,8 +103,16 @@ def grood_suntay(r, jnt, version):
     return KIN
 
 
-def makeax_1_0(pax, dax):
-    """ helper function to gather axes for grood and suntay"""
+def makeax(pax, dax, mode='1.1'):
+    """ 
+    helper function to gather axes for grood and suntay.
+    
+    Args:
+        pax: Proximal axes data.
+        dax: Distal axes data.
+        mode (str): '1.1' (for original makeax logic)
+                    '1.0' (for original makeax_1_0 logic).
+    """
     num_frames = len(pax)
     num_axes = 3
 
@@ -126,6 +125,11 @@ def makeax_1_0(pax, dax):
     dist_z = np.zeros((num_frames, num_axes))
 
     floatax = np.zeros((num_frames, num_axes))
+    
+    if mode == '1.1':
+        floatax_isb = np.zeros((num_frames, num_axes))
+    elif mode != '1.0':
+        raise ValueError(f"Unknown mode for make_axes_merged: {mode}")
 
     for i in range(num_frames):
         prox_x[i, :] = makeunit(pax[i][0, :])
@@ -136,7 +140,11 @@ def makeax_1_0(pax, dax):
         dist_y[i, :] = makeunit(dax[i][1, :])
         dist_z[i, :] = makeunit(dax[i][2, :])
 
-        floatax[i, :] = np.cross(dist_z[i, :], prox_y[i, :])
+        if mode == '1.1':
+            floatax[i, :] = np.cross(dist_x[i, :], prox_z[i, :])
+            floatax_isb[i, :] = np.cross(dist_y[i, :], prox_z[i, :])
+        else: # mode == '1.0'
+            floatax[i, :] = np.cross(dist_z[i, :], prox_y[i, :])
 
     floatax = makeunit(floatax)
     prox_x = makeunit(prox_x)
@@ -146,48 +154,11 @@ def makeax_1_0(pax, dax):
     prox_z = makeunit(prox_z)
     dist_z = makeunit(dist_z)
 
-    return floatax, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z
-
-
-def makeax(pax, dax):
-    """ helper function to gather axes for grood and suntay"""
-    num_frames = len(pax)
-    num_axes = 3
-
-    prox_x = np.zeros((num_frames, num_axes))
-    prox_y = np.zeros((num_frames, num_axes))
-    prox_z = np.zeros((num_frames, num_axes))
-
-    dist_x = np.zeros((num_frames, num_axes))
-    dist_y = np.zeros((num_frames, num_axes))
-    dist_z = np.zeros((num_frames, num_axes))
-
-    floatax = np.zeros((num_frames, num_axes))
-    floatax_isb = np.zeros((num_frames, num_axes))
-
-    for i in range(num_frames):
-        prox_x[i, :] = makeunit(pax[i][0, :])
-        prox_y[i, :] = makeunit(pax[i][1, :])
-        prox_z[i, :] = makeunit(pax[i][2, :])
-
-        dist_x[i, :] = makeunit(dax[i][0, :])
-        dist_y[i, :] = makeunit(dax[i][1, :])
-        dist_z[i, :] = makeunit(dax[i][2, :])
-
-        floatax[i, :] = np.cross(dist_x[i, :], prox_z[i, :])
-        floatax_isb[i, :] = np.cross(dist_y[i, :], prox_z[i, :])
-
-    floatax = makeunit(floatax)
-    floatax_isb = makeunit(floatax_isb)
-
-    prox_x = makeunit(prox_x)
-    dist_x = makeunit(dist_x)
-    prox_y = makeunit(prox_y)
-    dist_y = makeunit(dist_y)
-    prox_z = makeunit(prox_z)
-    dist_z = makeunit(dist_z)
-
-    return floatax, floatax_isb, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z
+    if mode == '1.1':
+        floatax_isb = makeunit(floatax_isb)
+        return floatax, floatax_isb, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z
+    else: # mode == '1.0'
+        return floatax, prox_x, dist_x, prox_y, dist_y, prox_z, dist_z
 
 def refsystem(data, KIN, version):
     """Update reference system to match Oxford Foot Model."""

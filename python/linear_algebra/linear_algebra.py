@@ -171,10 +171,10 @@ def ctransform(c1, c2, vec):
         print(f'type of c2: {type(c2)}')
         raise TypeError('inputs must be numpy arrays')
 
-    t = c1 @ c2.T
+    t = np.matmul(c1, c2.T)
 
     # Apply the transformation.
-    vec2 = vec @ t
+    vec2 = np.matmul(vec, t)
     
     return vec2
 
@@ -424,6 +424,6 @@ def rotate_axes(axes, theta, axis):
     rev_rot_x = np.array([[1, 0, 0], [0, c / V, -b / V], [0, b / V, c / V]])
 
     # Combined rotation
-    t = rot_x @ rot_y @ rot_z @ rev_rot_y @ rev_rot_x
+    t = np.matmul(np.matmul(np.matmul(np.matmul(rot_x, rot_y), rot_z), rev_rot_y), rev_rot_x)
 
-    return axes @ t
+    return np.matmul(axes, t)
