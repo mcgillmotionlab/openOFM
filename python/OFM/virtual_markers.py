@@ -8,7 +8,6 @@ def create_virtual_markers(sdata, settings):
     # Check if settings argument is provided, otherwise set it to an empty dictionary
 
     version = settings['version']
-
     processing = settings['processing']
 
     # Define sides
@@ -26,11 +25,8 @@ def create_virtual_markers(sdata, settings):
         # FOREFOOT -------------
 
         # Extract markers from static trial
-        D1M_sta = sdata[side + 'D1M']
-        D5M_sta = sdata[side + 'D5M']
-        P5M_sta = sdata[side + 'P5M']
-        P1M_sta = sdata[side + 'P1M']
-        TOE_sta = sdata[side + 'TOE']
+        marker_names = ['D1M', 'D5M', 'P5M', 'P1M', 'TOE']
+        D1M_sta, D5M_sta, P5M_sta, P1M_sta, TOE_sta = [sdata[f"{side}{name}"] for name in marker_names]
 
         # correct position of markers (replace 4)
         if version == '1.0':
@@ -92,12 +88,8 @@ def create_virtual_markers(sdata, settings):
 
         # Hindfoot
         # extract markers from static trials
-        PCA_sta = sdata[side + 'PCA']  # PCA marker only present in static trials
-        HEE_sta = sdata[side + 'HEE']
-        STL_sta = sdata[side + 'STL']
-        LCA_sta = sdata[side + 'LCA']
-        P5M_sta = sdata[side + 'P5M']
-        CPG_sta = sdata[side + 'CPG']
+        static_markers = ['PCA', 'HEE', 'STL', 'LCA', 'P5M', 'CPG']
+        PCA_sta, HEE_sta, STL_sta, LCA_sta, P5M_sta, CPG_sta = [sdata[f"{side}{m}"] for m in static_markers]
 
         # correct position of markers
         if version == '1.0':
@@ -161,11 +153,8 @@ def create_virtual_markers(sdata, settings):
 
         # Tibia
         # extract markers from static trials
-        ANK_sta = sdata[side + 'ANK']
-        MMA_sta = sdata[side + 'MMA']  # MMA marker only present in static trials
-        HFB_sta = sdata[side + 'HFB']
-        SHN_sta = sdata[side + 'SHN']
-        TUB_sta = sdata[side + 'TUB']
+        marker_names = ['ANK', 'MMA', 'HFB', 'SHN', 'TUB']# MMA marker only present in static trials
+        ANK_sta, MMA_sta, HFB_sta, SHN_sta, TUB_sta = [sdata[f"{side}{m}"] for m in marker_names]
 
         # correct position of markers
         if version == '1.0':
@@ -247,10 +236,11 @@ def animate_virtual_markers(data, settings):
         D1M0_dyn = static2dynamic(O_dyn, A_dyn, L_dyn, P_dyn, D1M0)
 
         # D5M is physical marker
-        if processing[side + 'UseFloorFF']:
-            D5M0_dyn = static2dynamic(O_dyn, A_dyn, L_dyn, P_dyn, D5M0)
-        else:
-            D5M0_dyn = D5M_dyn
+        D5M0_dyn = (
+            static2dynamic(O_dyn, A_dyn, L_dyn, P_dyn, D5M0) 
+            if processing[f"{side}UseFloorFF"] 
+            else D5M_dyn
+        )
 
         for name, value in [('D1M0', D1M0_dyn), ('D5M0', D5M0_dyn), ('P1M', P1M_dyn), ('P5M', P5M_dyn), ('TOE', TOE_dyn)]:
             data[side + name] = value
@@ -260,18 +250,13 @@ def animate_virtual_markers(data, settings):
         O_dyn, A_dyn, L_dyn, P_dyn, _ = create_lcs(P5M_dyn, D5M_dyn - P5M_dyn, TOE_dyn - D5M_dyn, 'xyz')
 
         # get static
-        D1Mlat0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D1MlatX_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D1MlatY_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D1MlatZ_openOFM']['value'],
-                            ])
-        P1Mlat0 = np.array([data['parameters']['PROCESSING']['%' + side + 'P1MlatX_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'P1MlatY_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'P1MlatZ_openOFM']['value'],
-                            ])
-        D5Mlat0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D5MlatX_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D5MlatY_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D5MlatZ_openOFM']['value'],
-                            ])
+        proc_params = data['parameters']['PROCESSING']
+        def get_static_offset(name):
+            return np.array([
+                proc_params[f"%{side}{name}{axis}_openOFM"]['value'] 
+                for axis in 'XYZ'
+            ])
+        D1Mlat0, P1Mlat0, D5Mlat0 = [get_static_offset(m) for m in ['D1Mlat', 'P1Mlat', 'D5Mlat']]
 
         # create dynamic version of static marker and add as virtual marker
         D1Mlat_dyn = static2dynamic(O_dyn, A_dyn, L_dyn, P_dyn, D1Mlat0)
@@ -284,20 +269,19 @@ def animate_virtual_markers(data, settings):
 
         # Hindfoot
         # extract markers from static trials
-        PCA0_sta = np.array([data['parameters']['PROCESSING']['%' + side + 'PCA0X_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'PCA0Y_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'PCA0Z_openOFM']['value'],
-                             ])  # PCA marker only present in static trials
-        HFPlantar_sta = np.array([data['parameters']['PROCESSING']['%' + side + 'HFPlantarX_openOFM']['value'],
-                                  data['parameters']['PROCESSING']['%' + side + 'HFPlantarY_openOFM']['value'],
-                                  data['parameters']['PROCESSING']['%' + side + 'HFPlantarZ_openOFM']['value'],
-                                  ])
+        proc_params = data['parameters']['PROCESSING']
+
+        def get_static_vec(name):
+            return np.array([
+                proc_params[f"%{side}{name}{axis}_openOFM"]['value'] 
+                for axis in 'XYZ'
+            ])
+        PCA0_sta = get_static_vec('PCA0') # PCA marker only present in static trials
+        HFPlantar_sta = get_static_vec('HFPlantar')
 
         # extract markers from dynamic trials
-        STL_dyn = data[side + 'STL']
-        LCA_dyn = data[side + 'LCA']
-        CPG_dyn = data[side + 'CPG']
-        HE0_dyn = data[side + 'HEE']
+        marker_keys = ['STL', 'LCA', 'CPG', 'HEE']
+        STL_dyn, LCA_dyn, CPG_dyn, HE0_dyn = [data[f"{side}{k}"] for k in marker_keys]
 
         # correct position of markers
         if version == '1.0':
@@ -324,10 +308,7 @@ def animate_virtual_markers(data, settings):
                          ])
 
         # extract markers from dynamic trials
-        ANK_dyn = data[side + 'ANK']
-        HFB_dyn = data[side + 'HFB']
-        SHN_dyn = data[side + 'SHN']
-        TUB_dyn = data[side + 'TUB']
+        ANK_dyn, HFB_dyn, SHN_dyn, TUB_dyn = (data[side + name] for name in ['ANK', 'HFB', 'SHN', 'TUB'])
 
         # correct position of markers
         if version == '1.0':
@@ -341,10 +322,8 @@ def animate_virtual_markers(data, settings):
         MMA0_dyn = static2dynamic(O_dyn, A_dyn, L_dyn, P_dyn, MMA0)
 
         # add dynamic marker to dynamic trial
-        data[side + 'MMA'] = MMA0_dyn
-        data[side + 'ANK'] = ANK_dyn
-        data[side + 'TUB'] = TUB_dyn
-        data[side + 'HFB'] = HFB_dyn
+        for name, value in [('MMA', MMA0_dyn), ('ANK', ANK_dyn), ('TUB', TUB_dyn), ('HFB', HFB_dyn)]:
+            data[side + name] = value
 
         # Find arch height
         # Extract virtual markers for the ArchHeightIndex(from ofm_static2dynamic_data)
