@@ -29,20 +29,14 @@ def segments(data, version):
     sides = ['R', 'L']
     for side in sides:
 
-        if side == 'R':
-            sign = 1
-        elif side == 'L':
-            sign = -1
+        sign = 1 if side == 'R' else -1
 
         # =======================================================================
         # Create tibia segments
         # =======================================================================
 
         # Extract marker for the tibia relative to the lab
-        ANK = data[side + 'ANK']
-        MMA = data[side + 'MMA']
-        TUB = data[side + 'TUB']
-        HFB = data[side + 'HFB']
+        ANK, MMA, TUB, HFB = (data[side + name] for name in ['ANK', 'MMA', 'TUB', 'HFB'])
 
         # Create LabTibia origin
         LabTIB0 = (MMA + ANK) / 2
@@ -50,43 +44,24 @@ def segments(data, version):
         # Project TUB onto the plane of MMA, ANK, HFB
         PROT = point_to_plane(TUB, MMA, ANK, HFB)
 
-        if side + 'KneeJC' in data:
-            KneeJC = data[side + 'KneeJC']
-        else:
-            KneeJC = PROT
+        KneeJC = data.get(side + 'KneeJC', PROT)
 
         if version == '1.0':
             AnkleJC = data[side + 'AnkleJC']
             TIR = data[side + 'TIR']
+            [TIB0, TIB1, TIB2, TIB3, _] = create_lcs(AnkleJC, KneeJC - AnkleJC, sign * (AnkleJC - TIR), 'zxy')
+            # Create tibia relative to the lab ( TibiaLab)
+            [LabTIB0, LabTIB1, LabTIB2, LabTIB3, _] = create_lcs(LabTIB0, PROT - LabTIB0, sign * (MMA - ANK), 'zxy')
+
         elif version == '1.1':
             AnkleJC = (data[side + 'ANK'] + data[side + 'MMA']) / 2
-
-        if version == '1.0':
-            [TIB0, TIB1, TIB2, TIB3, _] = create_lcs(AnkleJC, KneeJC - AnkleJC, sign * (AnkleJC - TIR), 'zxy')
-        elif version == '1.1':
             [TIB0, TIB1, TIB2, TIB3, _] = create_lcs(AnkleJC, KneeJC - AnkleJC, sign * (MMA - ANK), 'yxz')
-
-        # Add to struct
-        data[side + 'TIB0'] = TIB0
-        data[side + 'TIB1'] = TIB1
-        data[side + 'TIB2'] = TIB2
-        data[side + 'TIB3'] = TIB3
-
-        # =======================================================================
-        # Create tibia relative to the lab ( TibiaLab)
-        # =======================================================================
-        #
-        # Create LabTibia axes
-        if version == '1.0':
-            [LabTIB0, LabTIB1, LabTIB2, LabTIB3, _] = create_lcs(LabTIB0, PROT - LabTIB0, sign * (MMA - ANK), 'zxy')
-        elif version == '1.1':
+            # Create LabTibia axes
             [LabTIB0, LabTIB1, LabTIB2, LabTIB3] = [TIB0, TIB1, TIB2, TIB3]
 
-        # Add as new channels
-        data[side + 'LabTIB0'] = LabTIB0
-        data[side + 'LabTIB1'] = LabTIB1
-        data[side + 'LabTIB2'] = LabTIB2
-        data[side + 'LabTIB3'] = LabTIB3
+        # Add to struct
+        for name, value in [('TIB0', TIB0), ('TIB1', TIB1), ('TIB2', TIB2), ('TIB3', TIB3), ('LabTIB0', LabTIB0), ('LabTIB1', LabTIB1), ('LabTIB2', LabTIB2), ('LabTIB3', LabTIB3)]:
+            data[side + name] = value
 
         # =======================================================================
         # Create hindfoot segment
@@ -97,29 +72,19 @@ def segments(data, version):
         HEE = data[side + 'HEE']
         HFPlantar = data[side + 'HFPlantar']
 
-
         # Create hindfoot axes
-        if version == '1.0':
-            [HDF0, HDF1, HDF2, HDF3, _] = create_lcs(HEE, HFPlantar - HEE, PCA - HEE, 'zyx')
-        elif version == '1.1':
-            [HDF0, HDF1, HDF2, HDF3, _] = create_lcs(HEE, HFPlantar - HEE, PCA - HEE, 'xzy')
-
+        lcs_order = 'zyx' if version == '1.0' else 'xzy'
+        HDF0, HDF1, HDF2, HDF3, _ = create_lcs(HEE, HFPlantar - HEE, PCA - HEE, lcs_order)
         # Add as new channels
-        data[side + 'HDF0'] = HDF0
-        data[side + 'HDF1'] = HDF1
-        data[side + 'HDF2'] = HDF2
-        data[side + 'HDF3'] = HDF3
+        for i, value in enumerate([HDF0, HDF1, HDF2, HDF3]):
+            data[f'{side}HDF{i}'] = value
 
         # =======================================================================
         # Create forefoot segment
         # =======================================================================
 
         # Extract markers
-        P1M = data[side + 'P1M']
-        P5M = data[side + 'P5M']
-        D1M0 = data[side + 'D1M0']
-        D5M0 = data[side + 'D5M0']
-        TOE = data[side + 'TOE']
+        P1M, P5M, D1M0, D5M0, TOE = (data[side + name] for name in ['P1M', 'P5M', 'D1M0', 'D5M0', 'TOE'])
 
         # Create virtual markers
         projTOE = point_to_plane(TOE, D1M0, D5M0, P5M)
@@ -132,9 +97,7 @@ def segments(data, version):
 
         # Find arch height
         # Extract virtual markers for the ArchHeightIndex
-        P1Mlat = data[side + 'P1Mlat']
-        D1Mlat = data[side + 'D1Mlat']
-        D5Mlat = data[side + 'D5Mlat']
+        P1Mlat, D1Mlat, D5Mlat = (data[side + name] for name in ['P1Mlat', 'D1Mlat', 'D5Mlat'])
         FootLength = data['parameters']['PROCESSING']['%' + side + 'FootLength_openOFM']['value']
 
         # Calculate the ArchHeightIndex
@@ -148,16 +111,13 @@ def segments(data, version):
                                ArchHeightIndex)).T
 
         # Create forefoot axes
-        if version == '1.0':
-            FOF0, FOF1, FOF2, FOF3, _ = create_lcs(projTOE, projTOE - proxFF, sign * (D1M0 - D5M0), 'zxy')
-        if version == '1.1':
-            FOF0, FOF1, FOF2, FOF3, _ = create_lcs(projTOE, projTOE - proxFF, sign * (D5M0 - D1M0), 'xyz')
+        lcs_order = 'zxy' if version == '1.0' else 'xyz'
+        lcs_vector = sign * (D1M0 - D5M0) if version == '1.0' else sign * (D5M0 - D1M0)
+        FOF0, FOF1, FOF2, FOF3, _ = create_lcs(projTOE, projTOE - proxFF, lcs_vector, lcs_order)
 
         # Add as new channels
-        data[side + 'FOF0'] = FOF0
-        data[side + 'FOF1'] = FOF1
-        data[side + 'FOF2'] = FOF2
-        data[side + 'FOF3'] = FOF3
+        for i, value in enumerate([FOF0, FOF1, FOF2, FOF3]):
+            data[f'{side}FOF{i}'] = value
         data[side + 'ArchHeightIndex'] = ArchHeightIndex
         data[side + 'ArchHeight_openOFM'] = ArchHeight
 
@@ -169,17 +129,13 @@ def segments(data, version):
         HLX = data[side + 'HLX']
 
         # Create hallux axes
-        if version == '1.0':
-            [HLX0, HLX1, HLX2, HLX3, _] = create_lcs(D1M0, HLX - D1M0, sign * (D1M0 - D5M0), 'zxy')
-        if version == '1.1':
-            [HLX0, HLX1, HLX2, HLX3, _] = create_lcs(D1M0, HLX - D1M0, FOF3-FOF0, 'yxz')
-
+        lcs_order = 'zxy' if version == '1.0' else 'yxz'
+        lcs_vector = sign * (D1M0 - D5M0) if version == '1.0' else FOF3 - FOF0
+        HLX0, HLX1, HLX2, HLX3, _ = create_lcs(D1M0, HLX - D1M0, lcs_vector, lcs_order)
 
         # Add as new channels
-        data[side + 'HLX0'] = HLX0
-        data[side + 'HLX1'] = HLX1
-        data[side + 'HLX2'] = HLX2
-        data[side + 'HLX3'] = HLX3
+        for i, value in enumerate([HLX0, HLX1, HLX2, HLX3]):
+            data[f'{side}HLX{i}'] = value
 
     r, jnt, data = getbones_data(data)
 
