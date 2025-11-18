@@ -18,13 +18,8 @@ def create_virtual_markers(sdata, settings):
     for side in sides:
 
         # Determine whether to use HE1 or HEE marker for the hindfoot
-        if side + 'HE1' in sdata:
-            HE1_sta = sdata[side + 'HE1']
-            processing['Has' + side + 'HE1'] = True
-        else:
-            HEE_sta = sdata[side + 'HEE']
-            HE1_sta = HEE_sta
-            processing['Has' + side + 'HE1'] = False
+        HE1_sta = sdata.get(side + 'HE1', sdata[side + 'HEE'])
+        processing['Has' + side + 'HE1'] = side + 'HE1' in sdata
 
         HE0_sta = HE1_sta
 
@@ -45,29 +40,21 @@ def create_virtual_markers(sdata, settings):
         O_sta, A_sta, L_sta, P_sta, _ = create_lcs(P1M_sta, P1M_sta - D5M_sta, TOE_sta - P5M_sta, 'xyz')
 
         # create forefoot virtual markers from static trial
-        if processing[side + 'UseFloorFF']:
-            D1M0 = np.column_stack((D1M_sta[:, 0], D1M_sta[:, 1], P5M_sta[:, 2]))
-            D5M0 = np.column_stack((D5M_sta[:, 0], D5M_sta[:, 1], P5M_sta[:, 2]))
-        else:
-            D1M0 = D1M_sta
-            D5M0 = D5M_sta
+        D1M0 = np.column_stack((D1M_sta[:, 0], D1M_sta[:, 1], P5M_sta[:, 2])) if processing[side + 'UseFloorFF'] else D1M_sta
+        D5M0 = np.column_stack((D5M_sta[:, 0], D5M_sta[:, 1], P5M_sta[:, 2])) if processing[side + 'UseFloorFF'] else D5M_sta
 
         # express forefoot virtual markers in LCS of static trial
         D1M0_lcl = move_marker_gcs_2_lcs(O_sta, A_sta, L_sta, P_sta, D1M0)
         D5M0_lcl = move_marker_gcs_2_lcs(O_sta, A_sta, L_sta, P_sta, D5M0)
 
         # round out errors and add to parameter list
-        D1M0_lcl_av = np.expand_dims(np.mean(D1M0_lcl, axis=0), axis=0)
-        D1M0_openOFMs = ['D1M0X_openOFM', 'D1M0Y_openOFM', 'D1M0Z_openOFM']
-        for i, D1M0_openOFM in enumerate(D1M0_openOFMs):
-            sdata['parameters']['PROCESSING']['%' + side + D1M0_openOFM] = {}
-            sdata['parameters']['PROCESSING']['%' + side + D1M0_openOFM] = D1M0_lcl_av[0, i]
-
-        D5M0_lcl_av = np.expand_dims(np.mean(D5M0_lcl, axis=0), axis=0)
-        D5M0_openOFMs = ['D5M0X_openOFM', 'D5M0Y_openOFM', 'D5M0Z_openOFM']
-        for i, D5M0_openOFM in enumerate(D5M0_openOFMs):
-            sdata['parameters']['PROCESSING']['%' + side + D5M0_openOFM] = {}
-            sdata['parameters']['PROCESSING']['%' + side + D5M0_openOFM] = D5M0_lcl_av[0, i]
+        for marker, data_lcl, names in [
+            ('D1M0', D1M0_lcl, ['D1M0X_openOFM', 'D1M0Y_openOFM', 'D1M0Z_openOFM']),
+            ('D5M0', D5M0_lcl, ['D5M0X_openOFM', 'D5M0Y_openOFM', 'D5M0Z_openOFM'])
+        ]:
+            data_av = np.expand_dims(np.mean(data_lcl, axis=0), axis=0)
+            for i, name in enumerate(names):
+                sdata['parameters']['PROCESSING']['%' + side + name] = data_av[0, i]
 
         # Lateral Forefoot - not yet supported
         # create technical lateral forefoot axes
@@ -237,21 +224,15 @@ def animate_virtual_markers(data, settings):
     for side in sides:
 
         # FOREFOOT -------------
-
+        
         # Extract virtual markers saved from static trial
-        D1M0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D1M0X_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D1M0Y_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D1M0Z_openOFM']['value'],
-                         ])
-        D5M0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D5M0X_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D5M0Y_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D5M0Z_openOFM']['value'],
-                         ])
+        D1M0 = np.array([data['parameters']['PROCESSING']['%' + side + f'D1M0{axis}_openOFM']['value'] 
+                        for axis in ['X', 'Y', 'Z']])
+        D5M0 = np.array([data['parameters']['PROCESSING']['%' + side + f'D5M0{axis}_openOFM']['value'] 
+                        for axis in ['X', 'Y', 'Z']])
+        
         # Extract markers from dynamic trial
-        D5M_dyn = data[side + 'D5M']
-        P5M_dyn = data[side + 'P5M']
-        P1M_dyn = data[side + 'P1M']
-        TOE_dyn = data[side + 'TOE']
+        D5M_dyn, P5M_dyn, P1M_dyn, TOE_dyn = (data[side + name] for name in ['D5M', 'P5M', 'P1M', 'TOE'])
 
         # # keep original D5M marker for replace4 in segments
         # data[side + 'D5M'] = D5M_dyn
@@ -271,11 +252,8 @@ def animate_virtual_markers(data, settings):
         else:
             D5M0_dyn = D5M_dyn
 
-        data[side + 'D1M0'] = D1M0_dyn
-        data[side + 'D5M0'] = D5M0_dyn
-        data[side + 'P1M'] = P1M_dyn
-        data[side + 'P5M'] = P5M_dyn
-        data[side + 'TOE'] = TOE_dyn
+        for name, value in [('D1M0', D1M0_dyn), ('D5M0', D5M0_dyn), ('P1M', P1M_dyn), ('P5M', P5M_dyn), ('TOE', TOE_dyn)]:
+            data[side + name] = value
 
         # Lateral Forefoot
         # create technical lateral forefoot axes
