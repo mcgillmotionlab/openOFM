@@ -29,10 +29,7 @@ def segments(data, version):
     sides = ['R', 'L']
     for side in sides:
 
-        if side == 'R':
-            sign = 1
-        elif side == 'L':
-            sign = -1
+        sign = 1 if side == 'R' else -1
 
         # =======================================================================
         # Create tibia segments
@@ -50,21 +47,20 @@ def segments(data, version):
         # Project TUB onto the plane of MMA, ANK, HFB
         PROT = point_to_plane(TUB, MMA, ANK, HFB)
 
-        if side + 'KneeJC' in data:
-            KneeJC = data[side + 'KneeJC']
-        else:
-            KneeJC = PROT
+        KneeJC = data.get(side + 'KneeJC', PROT)
 
         if version == '1.0':
             AnkleJC = data[side + 'AnkleJC']
             TIR = data[side + 'TIR']
+            [TIB0, TIB1, TIB2, TIB3, _] = create_lcs(AnkleJC, KneeJC - AnkleJC, sign * (AnkleJC - TIR), 'zxy')
+            # Create tibia relative to the lab ( TibiaLab)
+            [LabTIB0, LabTIB1, LabTIB2, LabTIB3, _] = create_lcs(LabTIB0, PROT - LabTIB0, sign * (MMA - ANK), 'zxy')
+
         elif version == '1.1':
             AnkleJC = (data[side + 'ANK'] + data[side + 'MMA']) / 2
-
-        if version == '1.0':
-            [TIB0, TIB1, TIB2, TIB3, _] = create_lcs(AnkleJC, KneeJC - AnkleJC, sign * (AnkleJC - TIR), 'zxy')
-        elif version == '1.1':
             [TIB0, TIB1, TIB2, TIB3, _] = create_lcs(AnkleJC, KneeJC - AnkleJC, sign * (MMA - ANK), 'yxz')
+            # Create LabTibia axes
+            [LabTIB0, LabTIB1, LabTIB2, LabTIB3] = [TIB0, TIB1, TIB2, TIB3]
 
         # Add to struct
         data[side + 'TIB0'] = TIB0
@@ -72,17 +68,6 @@ def segments(data, version):
         data[side + 'TIB2'] = TIB2
         data[side + 'TIB3'] = TIB3
 
-        # =======================================================================
-        # Create tibia relative to the lab ( TibiaLab)
-        # =======================================================================
-        #
-        # Create LabTibia axes
-        if version == '1.0':
-            [LabTIB0, LabTIB1, LabTIB2, LabTIB3, _] = create_lcs(LabTIB0, PROT - LabTIB0, sign * (MMA - ANK), 'zxy')
-        elif version == '1.1':
-            [LabTIB0, LabTIB1, LabTIB2, LabTIB3] = [TIB0, TIB1, TIB2, TIB3]
-
-        # Add as new channels
         data[side + 'LabTIB0'] = LabTIB0
         data[side + 'LabTIB1'] = LabTIB1
         data[side + 'LabTIB2'] = LabTIB2
@@ -97,13 +82,9 @@ def segments(data, version):
         HEE = data[side + 'HEE']
         HFPlantar = data[side + 'HFPlantar']
 
-
         # Create hindfoot axes
-        if version == '1.0':
-            [HDF0, HDF1, HDF2, HDF3, _] = create_lcs(HEE, HFPlantar - HEE, PCA - HEE, 'zyx')
-        elif version == '1.1':
-            [HDF0, HDF1, HDF2, HDF3, _] = create_lcs(HEE, HFPlantar - HEE, PCA - HEE, 'xzy')
-
+        lcs_order = 'zyx' if version == '1.0' else 'xzy'
+        HDF0, HDF1, HDF2, HDF3, _ = create_lcs(HEE, HFPlantar - HEE, PCA - HEE, lcs_order)
         # Add as new channels
         data[side + 'HDF0'] = HDF0
         data[side + 'HDF1'] = HDF1
@@ -148,10 +129,9 @@ def segments(data, version):
                                ArchHeightIndex)).T
 
         # Create forefoot axes
-        if version == '1.0':
-            FOF0, FOF1, FOF2, FOF3, _ = create_lcs(projTOE, projTOE - proxFF, sign * (D1M0 - D5M0), 'zxy')
-        if version == '1.1':
-            FOF0, FOF1, FOF2, FOF3, _ = create_lcs(projTOE, projTOE - proxFF, sign * (D5M0 - D1M0), 'xyz')
+        lcs_order = 'zxy' if version == '1.0' else 'xyz'
+        lcs_vector = sign * (D1M0 - D5M0) if version == '1.0' else sign * (D5M0 - D1M0)
+        FOF0, FOF1, FOF2, FOF3, _ = create_lcs(projTOE, projTOE - proxFF, lcs_vector, lcs_order)
 
         # Add as new channels
         data[side + 'FOF0'] = FOF0
@@ -169,11 +149,9 @@ def segments(data, version):
         HLX = data[side + 'HLX']
 
         # Create hallux axes
-        if version == '1.0':
-            [HLX0, HLX1, HLX2, HLX3, _] = create_lcs(D1M0, HLX - D1M0, sign * (D1M0 - D5M0), 'zxy')
-        if version == '1.1':
-            [HLX0, HLX1, HLX2, HLX3, _] = create_lcs(D1M0, HLX - D1M0, FOF3-FOF0, 'yxz')
-
+        lcs_order = 'zxy' if version == '1.0' else 'yxz'
+        lcs_vector = sign * (D1M0 - D5M0) if version == '1.0' else FOF3 - FOF0
+        HLX0, HLX1, HLX2, HLX3, _ = create_lcs(D1M0, HLX - D1M0, lcs_vector, lcs_order)
 
         # Add as new channels
         data[side + 'HLX0'] = HLX0
