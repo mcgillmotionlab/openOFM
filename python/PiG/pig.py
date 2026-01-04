@@ -25,13 +25,9 @@ def hipjointcentrePiG_data(data=None):
     SINTHETA = np.sin(0.496)
 
     # Extract pelvis marker positions
-    RASI = data['RASI']
-    LASI = data['LASI']
-
+    RASI, LASI = data['RASI'], data['LASI']
     if 'RPSI' in data:
-        RPSI = data['RPSI']
-        LPSI = data['LPSI']
-        SACR = (RPSI + LPSI) / 2
+        SACR = (data['RPSI'] + data['LPSI']) / 2
     else:
         SACR = data['SACR']
 
@@ -217,7 +213,6 @@ def anklejointcenterPiG(data):
 
     return data
 
-
 def getbones_data(data):
     """  retrieve "bone" information from data dict and creates joints.
     Arguments
@@ -233,104 +228,60 @@ def getbones_data(data):
 
     # Tibia relative to lab
     if 'RLabTIB0' in ch:
-        chname = 'RLabTIB0'
-        bplate = [chname[:7], 'RightTibiaLab']
-        bone.append(bplate)
-
-    # Tibia relative to the lab
-    if 'RLabTIB0' in ch:
-        jplate = ['RightTibiaLab', 'Global', 'RightTibiaLab']
-        bplate = ['GLB', 'Global']
-        jnt.append(jplate)
-        bone.append(bplate)
+        bone.append(['RLabTIB', 'RightTibiaLab'])
+        jnt.append(['RightTibiaLab', 'Global', 'RightTibiaLab'])
+        bone.append(['GLB', 'Global'])
 
     if 'RTIB0' in ch and 'RHDF0' in ch:
-        chname = 'RTIB0'
-        jplate = ['RightAnkleOFM', 'RightTibiaOFM', 'RightHindFoot']
-        bplate = [chname[:4], 'RightTibiaOFM']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['RightAnkleOFM', 'RightTibiaOFM', 'RightHindFoot'])
+        bone.append(['RTIB', 'RightTibiaOFM'])
 
     # tibia and ff
     if 'RTIB0' in ch and 'RFOF0' in ch:
-        chname = 'RTIB0'
-        jplate = ['RightFFTBA', 'RightTibiaOFM', 'RightForeFoot']
-        bplate = [chname[:4], 'RightTibiaOFM']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['RightFFTBA', 'RightTibiaOFM', 'RightForeFoot'])
+        bone.append(['RTIB', 'RightTibiaOFM'])
 
     if 'RHDF0' in ch and 'RFOF0' in ch:
-        chname = 'RHDF0'
-        jplate = ['RightMidFoot', 'RightHindFoot', 'RightForeFoot']
-        bplate = [chname[:4], 'RightHindFoot']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['RightMidFoot', 'RightHindFoot', 'RightForeFoot'])
+        bone.append(['RHDF', 'RightHindFoot'])
 
     if 'RFOF0' in ch and 'RHLX0' in ch:
-        chname = 'RFOF0'
-        jplate = ['RightMTP', 'RightForeFoot', 'RightHallux']
-        bplate = [chname[:4], 'RightForeFoot']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['RightMTP', 'RightForeFoot', 'RightHallux'])
+        bone.append(['RFOF', 'RightForeFoot'])
 
     if 'RHLX0' in ch:
-        chname = 'RHLX0'
-        bplate = [chname[:4], 'RightHallux']
-        bone.append(bplate)
+        bone.append(['RHLX', 'RightHallux'])
 
     if 'LTIB0' in ch and 'LHDF0' in ch:
-        chname = 'LTIB0'
-        jplate = ['LeftAnkleOFM', 'LeftTibiaOFM', 'LeftHindFoot']
-        bplate = [chname[:4], 'LeftTibiaOFM']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['LeftAnkleOFM', 'LeftTibiaOFM', 'LeftHindFoot'])
+        bone.append(['LTIB', 'LeftTibiaOFM'])
 
     # Tibia relative to lab
     if 'LLabTIB0' in ch:
-        chname = 'LLabTIB0'
-        jplate = ['LeftTibiaLab', 'Global', 'LeftTibiaLab']
-        bplate = ['GLB', 'Global']
-        jnt.append(jplate)
-        bone.append(bplate)
-
-    if 'LLabTIB0' in ch:
-        chname = 'LLabTIB0'
-        bplate = [chname[:7], 'LeftTibiaLab']
-        bone.append(bplate)
+        jnt.append(['LeftTibiaLab', 'Global', 'LeftTibiaLab'])
+        bone.append(['GLB', 'Global'])
+        bone.append(['LLabTIB', 'LeftTibiaLab'])
 
     # tibia and ff
     if 'LTIB0' in ch and 'LFOF0' in ch:
-        chname = 'LTIB0'
-        jplate = ['LeftFFTBA', 'LeftTibiaOFM', 'LeftForeFoot']
-        bplate = [chname[:4], 'LeftTibiaOFM']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['LeftFFTBA', 'LeftTibiaOFM', 'LeftForeFoot'])
+        bone.append(['LTIB', 'LeftTibiaOFM'])
 
     if 'LHDF0' in ch and 'LFOF0' in ch:
-        chname = 'LHDF0'
-        jplate = ['LeftMidFoot', 'LeftHindFoot', 'LeftForeFoot']
-        bplate = [chname[:4], 'LeftHindFoot']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['LeftMidFoot', 'LeftHindFoot', 'LeftForeFoot'])
+        bone.append(['LHDF', 'LeftHindFoot'])
 
     if 'LFOF0' in ch and 'LHLX0' in ch:
-        chname = 'LFOF0'
-        jplate = ['LeftMTP', 'LeftForeFoot', 'LeftHallux']
-        bplate = [chname[:4], 'LeftForeFoot']
-        jnt.append(jplate)
-        bone.append(bplate)
+        jnt.append(['LeftMTP', 'LeftForeFoot', 'LeftHallux'])
+        bone.append(['LFOF', 'LeftForeFoot'])
 
     if 'LHLX0' in ch:
-        chname = 'LHLX0'
-        bplate = [chname[:4], 'LeftHallux']
-        bone.append(bplate)
+        bone.append(['LHLX', 'LeftHallux'])
 
     # reformat bones
     r = prep_bones(data, bone)
 
     return r, jnt, data
-
-
 
 
 def chordPiG(a, b, c, delta):

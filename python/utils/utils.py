@@ -67,27 +67,19 @@ def c3d_to_dict(fl, verbose=False):
 
 def addchannelsgs(data, KIN):
     """ helper function to add all the computed data to the data dict"""
-    sides = ['Right', 'Left']
-    for side in sides:
-        data[side + 'HFTBA_x'] = KIN[side + 'AnkleOFM']['flx']
-        data[side + 'HFTBA_y'] = KIN[side + 'AnkleOFM']['tw']
-        data[side + 'HFTBA_z'] = KIN[side + 'AnkleOFM']['abd']
 
-        data[side + 'FFHFA_x'] = KIN[side + 'MidFoot']['flx']
-        data[side + 'FFHFA_y'] = KIN[side + 'MidFoot']['abd']
-        data[side + 'FFHFA_z'] = KIN[side + 'MidFoot']['tw']
+    mappings = [
+        ('HFTBA', 'AnkleOFM', ('flx', 'tw', 'abd')),
+        ('FFHFA', 'MidFoot',  ('flx', 'abd', 'tw')),
+        ('HXFFA', 'MTP',      ('flx', 'abd', 'tw')),
+        ('TIBA',  'TibiaLab', ('flx', 'abd', 'tw')),
+        ('FFTBA', 'FFTBA',    ('flx', 'tw', 'abd'))
+    ]
 
-        data[side + 'HXFFA_x'] = KIN[side + 'MTP']['flx']
-        data[side + 'HXFFA_y'] = KIN[side + 'MTP']['abd']
-        data[side + 'HXFFA_z'] = KIN[side + 'MTP']['tw']
-
-        data[side + 'TIBA_x'] = KIN[side + 'TibiaLab']['flx']
-        data[side + 'TIBA_y'] = KIN[side + 'TibiaLab']['abd']
-        data[side + 'TIBA_z'] = KIN[side + 'TibiaLab']['tw']
-
-        data[side + 'FFTBA_x'] = KIN[side + 'FFTBA']['flx']
-        data[side + 'FFTBA_y'] = KIN[side + 'FFTBA']['tw']
-        data[side + 'FFTBA_z'] = KIN[side + 'FFTBA']['abd']
+    for side in ['Right', 'Left']:
+        for d_name, k_name, src_comps in mappings:
+            for axis, comp in zip('xyz', src_comps):
+                data[f"{side}{d_name}_{axis}"] = KIN[f"{side}{k_name}"][comp]
 
     return data
 
@@ -136,7 +128,30 @@ def getDir(data, ch=None):
     walkDir = axis + direction
 
     return walkDir
+def getDir(data, ch=None):
+    """ get direction of movement based on marker ch"""
 
+    # Determine Vector Source
+    if ch:
+        vec = data[ch]
+    elif 'RPSI' in data:
+        vec = (data['RPSI'] + data['LPSI']) / 2
+    else:
+        vec = data.get('SACR', data.get('RPCA'))
+        if vec is None: raise ValueError
+
+    # Determine Dominant Axis (Global X vs Y)
+    dim = np.argmax(np.abs(vec[-1, :2] - vec[0, :2]))
+    
+    # Determine Direction (Pos vs Neg)
+    v_clean = vec[:, dim]
+    v_clean = v_clean[~np.isnan(v_clean)]
+
+    axis_char = ['I', 'J'][dim]
+    slope_str = 'neg' if v_clean[0] > v_clean[-1] else 'pos'
+
+    # todo implement z direction
+    return axis_char + slope_str
 
 def getDirStat(data, ch=None):
     """ get direction of standing based on foot markers"""
@@ -361,31 +376,21 @@ def make_plot_title(settings):
 
 def get_nrmse(data_raw, data_processed):
     sides = ['Right', 'Left']
+    joints = ['TIBA', 'HFTBA', 'FFTBA', 'FFHFA', 'HXFFA']
+
     for side in sides:
         s = side[0]
-        data_raw['nrmse' + side + 'TIBA_x'] = str(round(nrmse(data_processed[s + 'TIBA'][:, 0], data_raw[side + 'TIBA_x']), 4))
-        data_raw['nrmse' + side + 'TIBA_y'] = str(round(nrmse(data_processed[s + 'TIBA'][:, 1], data_raw[side + 'TIBA_y']), 4))
-        data_raw['nrmse' + side + 'TIBA_z'] = str(round(nrmse(data_processed[s + 'TIBA'][:, 2], data_raw[side + 'TIBA_z']), 4))
-
-        data_raw['nrmse' + side + 'HFTBA_x'] = str(round(nrmse(data_processed[s + 'HFTBA'][:, 0], data_raw[side + 'HFTBA_x']), 4))
-        data_raw['nrmse' + side + 'HFTBA_y'] = str(round(nrmse(data_processed[s + 'HFTBA'][:, 1], data_raw[side + 'HFTBA_y']), 4))
-        data_raw['nrmse' + side + 'HFTBA_z'] = str(round(nrmse(data_processed[s + 'HFTBA'][:, 2], data_raw[side + 'HFTBA_z']), 4))
-
-        data_raw['nrmse' + side + 'FFTBA_x'] = str(round(nrmse(data_processed[s + 'FFTBA'][:, 0], data_raw[side + 'FFTBA_x']), 4))
-        data_raw['nrmse' + side + 'FFTBA_y'] = str(round(nrmse(data_processed[s + 'FFTBA'][:, 1], data_raw[side + 'FFTBA_y']), 4))
-        data_raw['nrmse' + side + 'FFTBA_z'] = str(round(nrmse(data_processed[s + 'FFTBA'][:, 2], data_raw[side + 'FFTBA_z']), 4))
-
-        data_raw['nrmse' + side + 'FFHFA_x'] = str(round(nrmse(data_processed[s + 'FFHFA'][:, 0], data_raw[side + 'FFHFA_x']), 4))
-        data_raw['nrmse' + side + 'FFHFA_y'] = str(round(nrmse(data_processed[s + 'FFHFA'][:, 1], data_raw[side + 'FFHFA_y']), 4))
-        data_raw['nrmse' + side + 'FFHFA_z'] = str(round(nrmse(data_processed[s + 'FFHFA'][:, 2], data_raw[side + 'FFHFA_z']), 4))
-
-        data_raw['nrmse' + side + 'HXFFA_x'] = str(round(nrmse(data_processed[s + 'HXFFA'][:, 0], data_raw[side + 'HXFFA_x']), 4))
-        data_raw['nrmse' + side + 'HXFFA_y'] = str(round(nrmse(data_processed[s + 'HXFFA'][:, 1], data_raw[side + 'HXFFA_y']), 4))
-
+        for joint in joints:
+            axes = ['x', 'y'] if joint == 'HXFFA' else ['x', 'y', 'z']
+            
+            for i, ax in enumerate(axes):
+                val = nrmse(data_processed[s + joint][:, i], data_raw[side + joint + '_' + ax])
+                data_raw[f'nrmse{side}{joint}_{ax}'] = str(round(val, 4))
 
         # compare metrics (arch height)
         data_raw['nrmse' + s + 'ArchHeightIndex'] = str(
             round(nrmse(data_processed[s + 'ArchHeightIndex'][:, 2], data_raw[s + 'ArchHeightIndex']), 4))
+            
         data_raw['nrmse' + s + 'ArchHeight'] = str(
             round(nrmse(data_processed[s + 'ArchHeight'][:, 2], data_raw[s + 'ArchHeight'][:, 2]), 4))
 
