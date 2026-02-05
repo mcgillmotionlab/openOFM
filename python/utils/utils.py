@@ -390,3 +390,10 @@ def get_nrmse(data_raw, data_processed):
             round(nrmse(data_processed[s + 'ArchHeight'][:, 2], data_raw[s + 'ArchHeight'][:, 2]), 4))
 
     return data_raw
+
+
+def set_params(side, marker_lcl_av, sdata, marker):
+    marker_openOFMs = [marker + 'X_openOFM', marker + 'Y_openOFM', marker + 'Z_openOFM']
+    for i, marker_openOFM in enumerate(marker_openOFMs):
+        sdata['parameters']['PROCESSING']['%' + side + marker_openOFM] = {}
+        sdata['parameters']['PROCESSING']['%' + side + marker_openOFM] = marker_lcl_av[0, i]
