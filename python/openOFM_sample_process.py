@@ -3,7 +3,7 @@ import os
 
 from OFM.virtual_markers import create_virtual_markers
 from utils.utils import c3d_to_dict, find_repo_root, get_python_settings,  make_plot_title
-from PiG.pig import hipjointcentrePiG_data, kneejointcenterPiG, anklejointcenterPiG
+from PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
 from OFM.virtual_markers import animate_virtual_markers
 from OFM.segments import segments
 from OFM.kinematics import kinematics
@@ -41,7 +41,7 @@ def main():
         data['parameters']['PROCESSING'][key]['value'] = value
 
     # 5:compute hip, knee and ankle joint center (here we use PIG versions)
-    data = hipjointcentrePiG_data(data)
+    data = hipjointcentrePiG(data)
     data = kneejointcenterPiG(data)
     data = anklejointcenterPiG(data)
 

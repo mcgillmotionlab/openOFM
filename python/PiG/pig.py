@@ -2,7 +2,7 @@ import numpy as np
 from linear_algebra.linear_algebra import makeunit, gunit, ctransform, create_lcs, rotate_axes, magnitude
 
 
-def hipjointcentrePiG_data(data=None):
+def hipjointcentrePiG(data=None):
     """
     data = HIPJOINTCENTREPIG_DATA(data,test) computes left and right hip joint
     centers for plug-in gait (PiG) marker data

@@ -1,4 +1,4 @@
-from PiG.pig import hipjointcentrePiG_data, kneejointcenterPiG, anklejointcenterPiG
+from PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
 from OFM.virtual_markers import animate_virtual_markers
 from OFM.segments import segments
 from OFM.kinematics import kinematics
@@ -17,7 +17,7 @@ def openOFM_dynamic(settings):
 
     if settings['version'] == '1.0':
         # % compute hip, knee and ankle joint center
-        data = hipjointcentrePiG_data(data)
+        data = hipjointcentrePiG(data)
         data = kneejointcenterPiG(data)
         data = anklejointcenterPiG(data)
 
