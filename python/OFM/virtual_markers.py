@@ -363,3 +363,21 @@ def animate_virtual_markers(data, settings):
         data[side + 'ArchHeight'] = ArchHeight
 
     return data
+
+def midpoint_joint_center(data, marker1_name, marker2_name, midpoint_name):
+
+# Define sides
+    sides = ['R', 'L']
+
+    # Iterate over sides
+    for side in sides:
+
+        marker1 = data[side + marker1_name]
+        marker2 = data[side + marker2_name]
+
+        midpoint = (marker1 + marker2)/2
+
+        data[side + midpoint_name] = midpoint
+
+
+    return data
