@@ -1,0 +1,9 @@
+# Treat Python files as Python
+*.py linguist-language=Python
+
+# Treat MATLAB files as MATLAB
+*.m linguist-language=MATLAB
+
+# Optional: mark MATLAB files as vendored so they don't dominate language stats
+# Comment this line out if you want MATLAB to still count toward the repo percentage
+# *.m linguist-vendored
