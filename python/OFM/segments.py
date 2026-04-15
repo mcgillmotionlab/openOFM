@@ -137,6 +137,22 @@ def segments(data, version):
         for i, value in enumerate([HLX0, HLX1, HLX2, HLX3]):
             data[f'{side}HLX{i}'] = value
 
+        # =======================================================================
+        # Create wholefoot segment
+        # =======================================================================
+
+        # Extract markers
+        PCA = data[side + 'PCA']
+        HEE = data[side + 'HEE']
+        projTOE = projTOE
+
+        # Create wholefoot axes
+        lcs_order = 'zyx' if version == '1.0' else 'xzy'
+        WLF0, WLF1, WLF2, WLF3, _ = create_lcs(HEE, projTOE - HEE, PCA - HEE, lcs_order)
+        # Add as new channels
+        for i, value in enumerate([WLF0, WLF1, WLF2, WLF3]):
+            data[f'{side}WLF{i}'] = value
+
     r, jnt, data = getbones_data(data)
 
     return data, r, jnt
