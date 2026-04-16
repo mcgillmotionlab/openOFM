@@ -144,7 +144,6 @@ def segments(data, version):
         # Extract markers
         PCA = data[side + 'PCA']
         HEE = data[side + 'HEE']
-        projTOE = projTOE
 
         # Create wholefoot axes
         lcs_order = 'zyx' if version == '1.0' else 'xzy'
