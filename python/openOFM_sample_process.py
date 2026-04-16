@@ -8,6 +8,7 @@ from OFM.virtual_markers import animate_virtual_markers
 from OFM.segments import segments
 from OFM.kinematics import kinematics
 from plotting.plotting import plot_angles
+from utils.export import export_angles, export_axes
 
 
 # path to raw static file, raw dynamic file, and settings file
@@ -54,9 +55,11 @@ def main():
     # 8: Compute joint angles according to Grood and Suntay method
     data = kinematics(data, r, jnt, settings['version'])
 
+    export_axes(data, subject='example')
+    export_angles(data, subject='example')
+
     # 9 plot results
     plot_angles(data=data, plot_title='sample process')
-
 
 if __name__ == "__main__":
     main()
