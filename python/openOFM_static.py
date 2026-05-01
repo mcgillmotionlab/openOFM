@@ -14,7 +14,7 @@ def openOFM_static(settings):
         sdata, _ = get_data(settings)
 
     # 2: Create dynamic version of virtual markers present in static trial + compute phi and omega
-    sdata = create_virtual_markers(sdata, settings)
+    sdata = create_virtual_markers(sdata, None, 1.1)
 
     if settings['nexus']:
         set_nexus_data(sdata, TRIAL_TYPE)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         parser.add_argument('--data_dir', default='Data_Sample/Sample', help='Name of subfolder relative to root')
         parser.add_argument('--file_name', default='static.c3d', help='name of static trial file to process')
         parser.add_argument('--use_settings', action="store_true",
-                            help='If true, looks for settings.yml in the subject folder. '
+                            help='If true, looks for subject_measurements.yml in the subject folder. '
                                  'If false, looks for settings in .c3d file')
         args = vars(parser.parse_args())
         settings_params.update(args)

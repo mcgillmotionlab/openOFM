@@ -67,7 +67,7 @@ if __name__ == "__main__":
         parser.add_argument('--data_dir', default='Data_Sample/Sample', help='Name of subfolder relative to root')
         parser.add_argument('--file_name', default='dynamic.c3d', help='name of dynamic trial to process')
         parser.add_argument('--use_settings', action="store_true",
-                            help='If true, looks for settings.yml in the subject folder. '
+                            help='If true, looks for subject_measurements.yml in the subject folder. '
                                  'If false, looks for settings in .c3d file')
         parser.add_argument('--make_plot', action="store_true",
                             help='If true, makes a plot showing kinematic results. '

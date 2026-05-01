@@ -4,27 +4,22 @@ from linear_algebra.linear_algebra import static2dynamic, create_lcs, point_to_p
 from utils.utils import getDirStat, set_params
 
 
-def create_virtual_markers(sdata, settings):
+def create_virtual_markers(sdata, process_options, version):
     # Check if settings argument is provided, otherwise set it to an empty dictionary
 
-    version = settings['version']
-
-    processing = settings['processing']
-
-    # Define sides
-    sides = ['R', 'L']
 
     # Iterate over sides
+    sides = ['R', 'L']
     for side in sides:
 
         # Determine whether to use HE1 or HEE marker for the hindfoot
         if side + 'HE1' in sdata:
             HE1_sta = sdata[side + 'HE1']
-            processing['Has' + side + 'HE1'] = True
+            process_options['Has' + side + 'HE1'] = True
         else:
             HEE_sta = sdata[side + 'HEE']
             HE1_sta = HEE_sta
-            processing['Has' + side + 'HE1'] = False
+            process_options['Has' + side + 'HE1'] = False
 
         HE0_sta = HE1_sta
 
@@ -45,7 +40,7 @@ def create_virtual_markers(sdata, settings):
         O_sta, A_sta, L_sta, P_sta, _ = create_lcs(P1M_sta, P1M_sta - D5M_sta, TOE_sta - P5M_sta, 'xyz')
 
         # create forefoot virtual markers from static trial
-        if processing[side + 'UseFloorFF']:
+        if process_options[side + 'UseFloorFF']:
             D1M0 = np.column_stack((D1M_sta[:, 0], D1M_sta[:, 1], P5M_sta[:, 2]))
             D5M0 = np.column_stack((D5M_sta[:, 0], D5M_sta[:, 1], P5M_sta[:, 2]))
         else:
@@ -84,8 +79,7 @@ def create_virtual_markers(sdata, settings):
             HE0_sta, LCA_sta, STL_sta, _ = replace4(HE0_sta, LCA_sta, STL_sta, CPG_sta)
 
         # create technical hindfoot axes
-        O_sta, A_sta, L_sta, P_sta, _ = create_lcs(HE0_sta, HE0_sta - ((STL_sta + LCA_sta) / 2), STL_sta - LCA_sta,
-                                                   'xyz')
+        O_sta, A_sta, L_sta, P_sta, _ = create_lcs(HE0_sta, HE0_sta - ((STL_sta + LCA_sta) / 2), STL_sta - LCA_sta, 'xyz')
 
         # create virtual marker PCA0
         PCA0 = PCA_sta
@@ -95,7 +89,7 @@ def create_virtual_markers(sdata, settings):
         projP5M = point_to_plane(P5M_sta, HE0_sta, PCA_sta, midcal)
 
         # adjust HFPlantar depending if flat or not flat foot
-        if processing[side + 'HindFootFlat']:
+        if process_options[side + 'HindFootFlat']:
 
             if version == '1.0':
                 HFPlantar = np.vstack((projP5M[:, 0], projP5M[:, 1], HE0_sta[:, 2])).T
@@ -117,7 +111,7 @@ def create_virtual_markers(sdata, settings):
 
         else:
             HFPlantar = projP5M
-            if not processing['Has' + side + 'HE1']:
+            if not process_options['Has' + side + 'HE1']:
                 HE1_sta = (HEE_sta + PCA0) / 2
                 sdata[side + 'HEE'] = HEE_sta  # true HEE marker shift
                 sdata[side + 'HE1'] = HE1_sta  # saved HE1, which is OG HEE
@@ -176,7 +170,6 @@ def create_virtual_markers(sdata, settings):
 
         sdata['parameters']['PROCESSING']['%' + side + 'FootLength_openOFM'] = FootLength
         sdata[side + 'ArchHeight_openOFM'] = ArchHeight
-
 
         # round out errors and add to parameter list
         D1M0_lcl_av = np.expand_dims(np.mean(D1M0_lcl, axis=0), axis=0)

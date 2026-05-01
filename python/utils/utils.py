@@ -346,7 +346,7 @@ def get_python_settings(args):
     # extract arguments to dictionary
     root_dir = find_repo_root(os.path.dirname(__file__))
     data_dir = os.path.join(root_dir, args['data_dir'])
-    yaml_file_path = os.path.join(data_dir, 'settings.yml')
+    yaml_file_path = os.path.join(data_dir, 'subject_measurements.yml')
     with open(yaml_file_path, "r") as yaml_file:
         python_settings = yaml.safe_load(yaml_file)
 
