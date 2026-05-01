@@ -278,6 +278,13 @@ def getbones_data(data):
         bplate = [chname[:4], 'RightHallux']
         bone.append(bplate)
 
+    if 'RWLF0' in ch and 'RTIB0' in ch:
+        chname = 'RWLF0'
+        jplate = ['RightWFTBA', 'RightTibiaOFM', 'RightWholeFoot']
+        bplate = [chname[:4], 'RightWholeFoot']
+        jnt.append(jplate)
+        bone.append(bplate)
+
     if 'LTIB0' in ch and 'LHDF0' in ch:
         chname = 'LTIB0'
         jplate = ['LeftAnkleOFM', 'LeftTibiaOFM', 'LeftHindFoot']
@@ -323,6 +330,13 @@ def getbones_data(data):
     if 'LHLX0' in ch:
         chname = 'LHLX0'
         bplate = [chname[:4], 'LeftHallux']
+        bone.append(bplate)
+
+    if 'LWLF0' in ch and 'LTIB0' in ch:
+        chname = 'LWLF0'
+        jplate = ['LeftWFTBA', 'LeftTibiaOFM', 'LeftWholeFoot']
+        bplate = [chname[:4], 'LeftWholeFoot']
+        jnt.append(jplate)
         bone.append(bplate)
 
     # reformat bones

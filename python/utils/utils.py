@@ -89,6 +89,10 @@ def addchannelsgs(data, KIN):
         data[side + 'FFTBA_y'] = KIN[side + 'FFTBA']['tw']
         data[side + 'FFTBA_z'] = KIN[side + 'FFTBA']['abd']
 
+        data[side + 'WFTBA_x'] = KIN[side + 'WFTBA']['flx']
+        data[side + 'WFTBA_y'] = KIN[side + 'WFTBA']['tw']
+        data[side + 'WFTBA_z'] = KIN[side + 'WFTBA']['abd']
+
     return data
 
 
