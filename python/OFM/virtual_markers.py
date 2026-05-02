@@ -97,7 +97,7 @@ def create_virtual_markers(sdata, process_options, version):
                 # todo: check based on manuscript
                 # the anterior vector becomes the intersection of the mid-sagittal plane with
                 # a plane parallel to the floor
-                direction = getDirStat(sdata, settings)
+                direction = getDirStat(sdata)
                 if direction in ['Ipos', 'Ineg']:
                     [O, _, lat_ax, _, _] = create_lcs(HE1_sta, midcal - HE1_sta, PCA_sta - HE1_sta, 'xyz')
                     lat_ax = lat_ax - O

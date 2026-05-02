@@ -8,6 +8,7 @@ from OFM.virtual_markers import animate_virtual_markers
 from OFM.segments import segments
 from OFM.kinematics import kinematics
 from plotting.plotting import plot_angles
+f
 
 
 # path to raw static file, raw dynamic file, and settings file
