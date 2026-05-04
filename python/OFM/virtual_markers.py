@@ -1,7 +1,7 @@
 import numpy as np
 from linear_algebra.linear_algebra import static2dynamic, create_lcs, point_to_plane, replace4, \
     move_marker_gcs_2_lcs, magnitude
-from utils.utils import getDirStat, set_params
+from utils.utils import getDirStat, set_params, extract_value
 
 
 def create_virtual_markers(sdata, process_options, version):
@@ -197,7 +197,7 @@ def create_virtual_markers(sdata, process_options, version):
         set_params(side, MMA0_lcl_av, sdata, marker='MMA')
 
     # extract relevant ofm parameters as separate dict
-    ofm_dict = dict(filter(lambda item: 'openOFM' in item[0], sdata['parameters']['PROCESSING'].items()))
+    ofm_dict = {k: extract_value(v) for k, v in sdata['parameters']['PROCESSING'].items() if 'openOFM' in k}
 
     return sdata, ofm_dict
 

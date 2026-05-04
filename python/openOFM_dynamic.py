@@ -2,7 +2,7 @@ from PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
 from OFM.virtual_markers import animate_virtual_markers
 from OFM.segments import segments
 from OFM.kinematics import kinematics
-from utils.utils import get_data, get_python_settings, is_nexus, make_plot_title
+from utils.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
 from plotting.plotting import plot_angles
 
 TRIAL_TYPE = 'dynamic'
@@ -22,20 +22,17 @@ def openOFM_dynamic(settings):
         data = anklejointcenterPiG(data)
 
     # extract relevant ofm parameters as separate dict
-    ofm_dict = dict(filter(lambda item: 'openOFM' in item[0], data['parameters']['PROCESSING'].items()))
-    # for key, value in ofm_dict.items():
-    #     data['parameters']['PROCESSING'][key] = {}
-    #     data['parameters']['PROCESSING'][key]['value'] = value
+    ofm_dict = {k: extract_value(v) for k, v in data['parameters']['PROCESSING'].items() if 'openOFM' in k}
 
     # 2: Create dynamic version of virtual markers present in static trial + compute phi and omega
     data = animate_virtual_markers(data, process_settings=settings['processing'], ofm_parameters=ofm_dict,
                                    version=settings['version'])
 
     # 3: Create virtual segment embedded axes
-    data, r, jnt = segments(data, 1, settings['version'])
+    data, r, jnt = segments(data, ofm_parameters=ofm_dict, version=settings['version'])
 
     # 4: Compute joint angles according to Grood and Suntay method
-    data = kinematics(data, r, jnt, settings['version'])
+    data = kinematics(data, r, jnt, version=settings['version'])
 
     if settings['nexus']:
         set_nexus_data(data, TRIAL_TYPE)

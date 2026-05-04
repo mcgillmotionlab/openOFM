@@ -3,6 +3,11 @@ import numpy as np
 from linear_algebra.linear_algebra import nrmse
 
 
+def extract_value(v):
+    if isinstance(v, dict) and 'value' in v:
+        return v['value']
+    return v
+
 def find_repo_root(test, dirs=(".git",), default=None):
     """ Finds full local path to root of code repository"""
     prev, test = None, os.path.abspath(test)

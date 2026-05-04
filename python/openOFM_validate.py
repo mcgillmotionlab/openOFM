@@ -42,7 +42,7 @@ def ofm_validate():
         # run openOFM static
         settings['trial_type'] = 'static'
         settings['file_name'] = static_trial
-        sdata_processed, ofm_dict = openOFM_static(settings=settings)
+        _, _ = openOFM_static(settings=settings)
 
         # run openOFM dynamic
         settings['trial_type'] = 'dynamic'
