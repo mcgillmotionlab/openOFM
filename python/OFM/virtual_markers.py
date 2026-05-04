@@ -196,18 +196,16 @@ def create_virtual_markers(sdata, process_options, version):
 
         set_params(side, MMA0_lcl_av, sdata, marker='MMA')
 
+    # extract relevant ofm parameters as separate dict
+    ofm_dict = dict(filter(lambda item: 'openOFM' in item[0], sdata['parameters']['PROCESSING'].items()))
 
-    return sdata
+    return sdata, ofm_dict
 
 
-def animate_virtual_markers(data, settings):
+def animate_virtual_markers(data, process_settings, ofm_parameters, version):
     # Check if settings argument is provided, otherwise set it to an empty dictionary
 
-    if settings is None:
-        settings = {}
-
-    processing = settings['processing']
-    version = settings['version']
+    processing = process_settings
 
     # Define sides
     sides = ['R', 'L']
@@ -218,13 +216,13 @@ def animate_virtual_markers(data, settings):
         # FOREFOOT -------------
 
         # Extract virtual markers saved from static trial
-        D1M0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D1M0X_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D1M0Y_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D1M0Z_openOFM']['value'],
+        D1M0 = np.array([ofm_parameters['%' + side + 'D1M0X_openOFM'],
+                         ofm_parameters['%' + side + 'D1M0Y_openOFM'],
+                         ofm_parameters['%' + side + 'D1M0Z_openOFM'],
                          ])
-        D5M0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D5M0X_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D5M0Y_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'D5M0Z_openOFM']['value'],
+        D5M0 = np.array([ofm_parameters['%' + side + 'D5M0X_openOFM'],
+                         ofm_parameters['%' + side + 'D5M0Y_openOFM'],
+                         ofm_parameters['%' + side + 'D5M0Z_openOFM'],
                          ])
         # Extract markers from dynamic trial
         D5M_dyn = data[side + 'D5M']
@@ -261,17 +259,17 @@ def animate_virtual_markers(data, settings):
         O_dyn, A_dyn, L_dyn, P_dyn, _ = create_lcs(P5M_dyn, D5M_dyn - P5M_dyn, TOE_dyn - D5M_dyn, 'xyz')
 
         # get static
-        D1Mlat0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D1MlatX_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D1MlatY_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D1MlatZ_openOFM']['value'],
+        D1Mlat0 = np.array([ofm_parameters['%' + side + 'D1MlatX_openOFM'],
+                            ofm_parameters['%' + side + 'D1MlatY_openOFM'],
+                            ofm_parameters['%' + side + 'D1MlatZ_openOFM'],
                             ])
-        P1Mlat0 = np.array([data['parameters']['PROCESSING']['%' + side + 'P1MlatX_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'P1MlatY_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'P1MlatZ_openOFM']['value'],
+        P1Mlat0 = np.array([ofm_parameters['%' + side + 'P1MlatX_openOFM'],
+                            ofm_parameters['%' + side + 'P1MlatY_openOFM'],
+                            ofm_parameters['%' + side + 'P1MlatZ_openOFM'],
                             ])
-        D5Mlat0 = np.array([data['parameters']['PROCESSING']['%' + side + 'D5MlatX_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D5MlatY_openOFM']['value'],
-                            data['parameters']['PROCESSING']['%' + side + 'D5MlatZ_openOFM']['value'],
+        D5Mlat0 = np.array([ofm_parameters['%' + side + 'D5MlatX_openOFM'],
+                            ofm_parameters['%' + side + 'D5MlatY_openOFM'],
+                            ofm_parameters['%' + side + 'D5MlatZ_openOFM'],
                             ])
 
         # create dynamic version of static marker and add as virtual marker
@@ -285,13 +283,13 @@ def animate_virtual_markers(data, settings):
 
         # Hindfoot
         # extract markers from static trials
-        PCA0_sta = np.array([data['parameters']['PROCESSING']['%' + side + 'PCA0X_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'PCA0Y_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'PCA0Z_openOFM']['value'],
+        PCA0_sta = np.array([ofm_parameters['%' + side + 'PCA0X_openOFM'],
+                             ofm_parameters['%' + side + 'PCA0Y_openOFM'],
+                             ofm_parameters['%' + side + 'PCA0Z_openOFM'],
                              ])  # PCA marker only present in static trials
-        HFPlantar_sta = np.array([data['parameters']['PROCESSING']['%' + side + 'HFPlantarX_openOFM']['value'],
-                                  data['parameters']['PROCESSING']['%' + side + 'HFPlantarY_openOFM']['value'],
-                                  data['parameters']['PROCESSING']['%' + side + 'HFPlantarZ_openOFM']['value'],
+        HFPlantar_sta = np.array([ofm_parameters['%' + side + 'HFPlantarX_openOFM'],
+                                  ofm_parameters['%' + side + 'HFPlantarY_openOFM'],
+                                  ofm_parameters['%' + side + 'HFPlantarZ_openOFM'],
                                   ])
 
         # extract markers from dynamic trials
@@ -319,9 +317,9 @@ def animate_virtual_markers(data, settings):
 
         # Tibia
         # extract markers from static trials
-        MMA0 = np.array([data['parameters']['PROCESSING']['%' + side + 'MMAX_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'MMAY_openOFM']['value'],
-                         data['parameters']['PROCESSING']['%' + side + 'MMAZ_openOFM']['value'],
+        MMA0 = np.array([ofm_parameters['%' + side + 'MMAX_openOFM'],
+                         ofm_parameters['%' + side + 'MMAY_openOFM'],
+                         ofm_parameters['%' + side + 'MMAZ_openOFM'],
                          ])
 
         # extract markers from dynamic trials
@@ -349,18 +347,18 @@ def animate_virtual_markers(data, settings):
 
         # Joint centers
         # Extract joint centers for dynamic trial
-        if '%RAnkleJCX_openOFM' in data['parameters']['PROCESSING']:
-            AnkleJC= np.array([data['parameters']['PROCESSING']['%' + side + 'AnkleJCX_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'AnkleJCY_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'AnkleJCZ_openOFM']['value'],
+        if '%RAnkleJCX_openOFM' in ofm_parameters:
+            AnkleJC= np.array([ofm_parameters['%' + side + 'AnkleJCX_openOFM'],
+                             ofm_parameters['%' + side + 'AnkleJCY_openOFM'],
+                             ofm_parameters['%' + side + 'AnkleJCZ_openOFM'],
                              ])
             AnkleJC_dyn = static2dynamic(O_dyn, A_dyn, L_dyn, P_dyn, AnkleJC)
             data[side + 'AnkleJC'] = AnkleJC_dyn
 
-        if '%RKneeJCX_openOFM' in data['parameters']['PROCESSING']:
-            KneeJC= np.array([data['parameters']['PROCESSING']['%' + side + 'KneeJCX_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'KneeJCY_openOFM']['value'],
-                             data['parameters']['PROCESSING']['%' + side + 'KneeJCZ_openOFM']['value'],
+        if '%RKneeJCX_openOFM' in ofm_parameters:
+            KneeJC= np.array([ofm_parameters['%' + side + 'KneeJCX_openOFM'],
+                             ofm_parameters['%' + side + 'KneeJCY_openOFM'],
+                             ofm_parameters['%' + side + 'KneeJCZ_openOFM'],
                              ])
             KneeJC_dyn = static2dynamic(O_dyn, A_dyn, L_dyn, P_dyn, KneeJC)
             data[side + 'KneeJC'] = KneeJC_dyn
@@ -369,7 +367,7 @@ def animate_virtual_markers(data, settings):
         # Extract virtual markers for the ArchHeightIndex(from ofm_static2dynamic_data)
         P1Mlat = data[side + 'P1Mlat']
         D1Mlat = data[side + 'D1Mlat']
-        FootLength = data['parameters']['PROCESSING']['%' + side + 'FootLength_openOFM']['value']
+        FootLength = ofm_parameters['%' + side + 'FootLength_openOFM']
 
         # Calculate the ArchHeightIndex
         projP1M0lat = point_to_plane(P1Mlat, D1Mlat, D5M0_dyn, P5M_dyn)

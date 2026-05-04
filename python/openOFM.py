@@ -5,7 +5,11 @@ from typing import Callable, Union
 from python.OFM.virtual_markers import create_virtual_markers
 from utils.utils import c3d_to_dict
 from python.PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
-#todo: should we split stufff about collection session (e.g. marker diameter) from subject_measurements (e.g. knee width)?
+from OFM.virtual_markers import animate_virtual_markers
+from OFM.segments import segments
+from OFM.kinematics import kinematics
+from python.plotting.plotting import plot_angles
+#todo: should we split stuff about collection session (e.g. marker diameter) from subject_measurements (e.g. knee width)?
 
 
 
@@ -48,7 +52,7 @@ class openOFM:
                    (e.g., filtering settings, gait event detection method,
                    joint center computation methods).
 
-               version : float or None
+               version : str or None
                    OpenOFM pipeline version. Controls model definitions and algorithmic variations across releases.
 
                Notes
@@ -72,7 +76,7 @@ class openOFM:
         self.subject_measurements = subject_measurements
 
         # configuration
-        self.processing_options = process_options
+        self.process_options = process_options
         self.version=version
 
         # bookkeeping
@@ -82,6 +86,7 @@ class openOFM:
         # 👇 declare ALL expected attributes here
         self.static_data = None
         self.dynamic_data = None
+        self.ofm_parameters = None
 
 
     def load_static_file(self, filepath=None):
@@ -103,7 +108,7 @@ class openOFM:
         """ loads dynamic file data from c3d file to a dictionary"""
 
         if filepath is not None:
-            self.static_file = filepath
+            self.dynamic_file = filepath
 
         if self.dynamic_file is None:
             raise ValueError("dynamic file must be set before loading if not using an argument")
@@ -120,24 +125,24 @@ class openOFM:
             raise FileNotFoundError('File {} not found'.format(filepath))
 
         with open(filepath, 'r') as f:
-            self.subject_params = yaml.safe_load(f)
+            self.subject_measurements = yaml.safe_load(f)
 
-    def process_static_trial(self, subject_measurements=None, process_options=None):
+
+    def process_static_trial(self, process_options=None):
 
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
-        if subject_measurements is None:
-            raise ValueError('Subject measurements not loaded. Either specify path to subject measurements or Call '
-                             'load_subject_measurements() first.')
+        if self.subject_measurements is None:
+            raise ValueError('Subject measurements not loaded. Call load_subject_measurements() first.')
 
-        if self.processing_options is None:
-            self.processing_options = self.DEFAULT_PROCESSING_OPTIONS.copy()
+        if self.process_options is None:
+            self.process_options = self.DEFAULT_PROCESSING_OPTIONS.copy()
 
-        self.static_data = create_virtual_markers(self.static_data, self.processing_options, self.version)
+        self.static_data, self.ofm_parameters = create_virtual_markers(self.static_data, self.process_options, self.version)
 
     def compute_hip_joint_center(self, method: HJCMethod = 'pig'):
-
+        #todo: allow upper case PIG or mixed PiG to still work
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
@@ -185,3 +190,23 @@ class openOFM:
         else:
             raise ValueError("Unknown method '{}'. Use 'pig' or provide a callable function.".format(method)
             )
+
+    def process_dynamic_file(self):
+
+        #  animate virtual markers
+        self.dynamic_data = animate_virtual_markers(self.dynamic_data, self.process_options, self.ofm_parameters,
+                                                    self.version)
+
+        # create segments
+        self.dynamic_data, r, jnt = segments(self.dynamic_data, self.ofm_parameters, self.version)
+
+        # compute kinematics
+        self.dynamic_data = kinematics(self.dynamic_data, r, jnt, self.version)
+
+    def plot_angles(self, vicon_data=None, plot_title="", gsettings=None):
+        """helper function to compare vicon and OFM angles"""
+
+        plot_angles(data=self.dynamic_data, vicon_data=vicon_data, plot_title=plot_title, gsettings=gsettings)
+
+
+

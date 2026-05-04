@@ -14,14 +14,15 @@ def openOFM_static(settings):
         sdata, _ = get_data(settings)
 
     # 2: Create dynamic version of virtual markers present in static trial + compute phi and omega
-    sdata = create_virtual_markers(sdata, None, 1.1)
+    sdata, ofm_dict = create_virtual_markers(sdata, process_options=settings['processing'], version=settings['version'])
+
 
     if settings['nexus']:
         set_nexus_data(sdata, TRIAL_TYPE)
     else:
         set_data(sdata, settings)
 
-    return sdata
+    return sdata, ofm_dict
 
 
 if __name__ == "__main__":

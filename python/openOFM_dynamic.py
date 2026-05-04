@@ -21,11 +21,17 @@ def openOFM_dynamic(settings):
         data = kneejointcenterPiG(data)
         data = anklejointcenterPiG(data)
 
+    # extract relevant ofm parameters as separate dict
+    ofm_dict = dict(filter(lambda item: 'openOFM' in item[0], data['parameters']['PROCESSING'].items()))
+
     # 2: Create dynamic version of virtual markers present in static trial + compute phi and omega
-    data = animate_virtual_markers(data, settings)
+    data = animate_virtual_markers(data, process_settings=settings['processing'], ofm_parameters=settings,
+                                   version=settings['version'])
+
+
 
     # 3: Create virtual segment embedded axes
-    data, r, jnt = segments(data, settings['version'])
+    data, r, jnt = segments(data, 1, settings['version'])
 
     # 4: Compute joint angles according to Grood and Suntay method
     data = kinematics(data, r, jnt, settings['version'])

@@ -3,7 +3,7 @@ from linear_algebra.linear_algebra import create_lcs, magnitude, pointonline, po
 from PiG.pig import getbones_data
 
 
-def segments(data, version):
+def segments(data, ofm_parameters, version):
     """
        creates segment 'bones'
       for use in kinematic / kinetic modelling. Bones are virtual markers
@@ -23,6 +23,9 @@ def segments(data, version):
      - Foot length may be inexact during visualization in director.
        Joint angles are unaffected
      - Only lower-limb bones are currently created
+
+    Args:
+        ofm_parameters:
     """
 
     # Repeat for right and left sides
@@ -98,7 +101,7 @@ def segments(data, version):
         # Find arch height
         # Extract virtual markers for the ArchHeightIndex
         P1Mlat, D1Mlat, D5Mlat = (data[side + name] for name in ['P1Mlat', 'D1Mlat', 'D5Mlat'])
-        FootLength = data['parameters']['PROCESSING']['%' + side + 'FootLength_openOFM']['value']
+        FootLength = ofm_parameters['%' + side + 'FootLength_openOFM']
 
         # Calculate the ArchHeightIndex
         projP1M0lat = point_to_plane(P1Mlat, D1Mlat, D5Mlat, P5M)
