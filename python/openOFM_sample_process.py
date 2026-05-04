@@ -36,6 +36,10 @@ def main():
     # 4: Create local version of virtual markers present in static trial + add them to dynamic trial
     sdata, ofm_dict = create_virtual_markers(sdata, process_options=settings['processing'], version=settings['version'])
 
+    # for key, value in ofm_dict.items():
+    #     data['parameters']['PROCESSING'][key] = {}
+    #     data['parameters']['PROCESSING'][key]['value'] = value
+
     # 5:compute hip, knee and ankle joint center (here we use PIG versions)
     data = hipjointcentrePiG(data)
     data = kneejointcenterPiG(data)

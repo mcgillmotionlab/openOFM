@@ -23,12 +23,13 @@ def openOFM_dynamic(settings):
 
     # extract relevant ofm parameters as separate dict
     ofm_dict = dict(filter(lambda item: 'openOFM' in item[0], data['parameters']['PROCESSING'].items()))
+    # for key, value in ofm_dict.items():
+    #     data['parameters']['PROCESSING'][key] = {}
+    #     data['parameters']['PROCESSING'][key]['value'] = value
 
     # 2: Create dynamic version of virtual markers present in static trial + compute phi and omega
-    data = animate_virtual_markers(data, process_settings=settings['processing'], ofm_parameters=settings,
+    data = animate_virtual_markers(data, process_settings=settings['processing'], ofm_parameters=ofm_dict,
                                    version=settings['version'])
-
-
 
     # 3: Create virtual segment embedded axes
     data, r, jnt = segments(data, 1, settings['version'])
