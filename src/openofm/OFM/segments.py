@@ -1,31 +1,40 @@
 import numpy as np
-from linear_algebra.linear_algebra import create_lcs, magnitude, pointonline, point_to_plane
-from PiG.pig import getbones_data
+
+from ..linear_algebra.linear_algebra import create_lcs, magnitude, pointonline, point_to_plane
+from ..PiG.pig import getbones_data
 
 
-def segments(data, ofm_parameters, version):
-    """
-       creates segment 'bones'
-      for use in kinematic / kinetic modelling. Bones are virtual markers
-      representing segment axes.
-     ARGUMENTS
-       data         ... struct, trial data
-       settings     ... struct, information to guide computational options
-                        settings.test: bool (default=False), If true,
-                        runs unit test settings.HJC: options PiG=chord
-                        function, Harrington
-     RETURNS
-       data         ... Zoo data with new 'bones' appended
+def segments(
+    data: dict,
+    ofm_parameters: dict,
+    version: str,
+) -> tuple[dict, dict, list]:
+    """Create segment embedded-axis 'bones' for kinematic modelling.
 
-     NOTES
-     - Following anthropometric/metainfo data must be available:
-       'MarkerDiameter, R/LLegLength,R/LKneeWidth,R/LAnkleWidth
-     - Foot length may be inexact during visualization in director.
-       Joint angles are unaffected
-     - Only lower-limb bones are currently created
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary.
+    ofm_parameters : dict
+        openOFM parameters produced by
+        :func:`~openofm.OFM.virtual_markers.create_virtual_markers`.
+    version : str
+        openOFM model version.
 
-    Args:
-        ofm_parameters:
+    Returns
+    -------
+    data : dict
+        Updated trial data dictionary with segment axes appended.
+    r : dict
+        Segment reference frame dictionary for kinematic computation.
+    jnt : list
+        Joint definition list for kinematic computation.
+
+    Notes
+    -----
+    The following anthropometric parameters must be present in
+    ``data['parameters']['PROCESSING']``: ``MarkerDiameter``,
+    ``R/LLegLength``, ``R/LKneeWidth``, ``R/LAnkleWidth``.
     """
 
     # Repeat for right and left sides

@@ -1,8 +1,28 @@
 import matplotlib.pyplot as plt
 
 
-def plot_angles(data, vicon_data=None, plot_title="", gsettings=None):
-    """ helper function to compare vicon and OFM angles"""
+def plot_angles(
+    data: dict,
+    vicon_data: dict | None = None,
+    plot_title: str = "",
+    gsettings: dict | None = None,
+) -> None:
+    """Plot Oxford Foot Model joint angles, optionally overlaid with Vicon data.
+
+    Parameters
+    ----------
+    data : dict
+        openOFM-processed trial data containing angle channels.
+    vicon_data : dict or None, optional
+        Vicon-processed reference data for comparison.  When provided,
+        NRMSE values are shown in subplot titles.
+    plot_title : str, optional
+        Window and figure title string.
+    gsettings : dict or None, optional
+        Graphics settings dictionary.  Supported keys: ``'LineWidth'``,
+        ``'FontSize'``, ``'FontName'``, ``'vcol'``, ``'zcol'``,
+        ``'vstyle'``, ``'zstyle'``, ``'square'``.
+    """
     if gsettings is None:
         gsettings = {
             'LineWidth': 1.5,

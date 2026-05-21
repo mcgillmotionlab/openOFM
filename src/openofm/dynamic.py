@@ -1,14 +1,27 @@
-from PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
-from OFM.virtual_markers import animate_virtual_markers
-from OFM.segments import segments
-from OFM.kinematics import kinematics
-from utils.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
-from plotting.plotting import plot_angles
+from .PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
+from .OFM.virtual_markers import animate_virtual_markers
+from .OFM.segments import segments
+from .OFM.kinematics import kinematics
+from .utils.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
+from .plotting.plotting import plot_angles
 
 TRIAL_TYPE = 'dynamic'
 
 
-def openOFM_dynamic(settings):
+def openOFM_dynamic(settings: dict) -> dict:
+    """Run the openOFM dynamic trial processing pipeline.
+
+    Parameters
+    ----------
+    settings : dict
+        Processing settings.  Required keys: ``'trial_type'``, ``'file_name'``,
+        ``'version'``, ``'nexus'``.  Optional: ``'make_plot'``, ``'processing'``.
+
+    Returns
+    -------
+    dict
+        Processed dynamic trial data with kinematic angle channels appended.
+    """
     # 1: Access static calibration file
     if settings['nexus']:
         data, settings = get_nexus_data(settings)
@@ -45,8 +58,8 @@ def openOFM_dynamic(settings):
     return data
 
 
-if __name__ == "__main__":
-
+def main() -> None:
+    """Entry point for the ``openofm-dynamic`` command."""
     # initialize settings
     settings_params = dict(trial_type=TRIAL_TYPE)
 
@@ -55,7 +68,7 @@ if __name__ == "__main__":
 
     if nexus:
         import sys
-        from utils.utils_nexus import set_nexus_data, get_nexus_data
+        from .utils.utils_nexus import set_nexus_data, get_nexus_data
 
         settings_params['nexus'] = nexus
         settings_params['version'] = sys.argv[1]
@@ -84,3 +97,7 @@ if __name__ == "__main__":
 
     # run openOFM dynamic
     openOFM_dynamic(settings=settings_params)
+
+
+if __name__ == "__main__":
+    main()

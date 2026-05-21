@@ -1,14 +1,39 @@
 import numpy as np
-from linear_algebra.linear_algebra import static2dynamic, create_lcs, point_to_plane, replace4, \
-    move_marker_gcs_2_lcs, magnitude
-from utils.utils import getDirStat, set_params, extract_value
+
+from ..linear_algebra.linear_algebra import (
+    static2dynamic,
+    create_lcs,
+    point_to_plane,
+    replace4,
+    move_marker_gcs_2_lcs,
+    magnitude,
+)
+from ..utils.utils import getDirStat, set_params, extract_value
 
 
-def create_virtual_markers(sdata, process_options, version):
-    # Check if settings argument is provided, otherwise set it to an empty dictionary
+def create_virtual_markers(
+    sdata: dict,
+    process_options: dict,
+    version: str,
+) -> tuple[dict, dict]:
+    """Compute virtual markers from a static calibration trial.
 
+    Parameters
+    ----------
+    sdata : dict
+        Static trial data dictionary (marker arrays + ``parameters`` block).
+    process_options : dict
+        Processing flags, e.g. ``'RUseFloorFF'``, ``'LHindFootFlat'``.
+    version : str
+        openOFM model version, e.g. ``'1.0'`` or ``'1.1'``.
 
-    # Iterate over sides
+    Returns
+    -------
+    sdata : dict
+        Updated static data dictionary with virtual markers appended.
+    ofm_dict : dict
+        openOFM parameters extracted from ``sdata['parameters']['PROCESSING']``.
+    """
     sides = ['R', 'L']
     for side in sides:
 
@@ -202,15 +227,34 @@ def create_virtual_markers(sdata, process_options, version):
     return sdata, ofm_dict
 
 
-def animate_virtual_markers(data, process_settings, ofm_parameters, version):
-    # Check if settings argument is provided, otherwise set it to an empty dictionary
+def animate_virtual_markers(
+    data: dict,
+    process_settings: dict,
+    ofm_parameters: dict,
+    version: str,
+) -> dict:
+    """Animate static virtual markers into the dynamic trial coordinate frame.
 
+    Parameters
+    ----------
+    data : dict
+        Dynamic trial data dictionary.
+    process_settings : dict
+        Processing flags (e.g. ``'RUseFloorFF'``).
+    ofm_parameters : dict
+        openOFM parameters produced by :func:`create_virtual_markers`.
+    version : str
+        openOFM model version.
+
+    Returns
+    -------
+    dict
+        Updated *data* dictionary with animated virtual markers added.
+    """
     processing = process_settings
 
-    # Define sides
     sides = ['R', 'L']
 
-    # Iterate over sides
     for side in sides:
 
         # FOREFOOT -------------

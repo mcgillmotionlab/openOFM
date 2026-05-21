@@ -1,6 +1,7 @@
 #imports
 import os
-from openOFM import openOFM
+
+from openofm import openOFM
 
 
 # set paths

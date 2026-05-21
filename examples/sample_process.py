@@ -1,13 +1,12 @@
 import yaml
 import os
 
-from OFM.virtual_markers import create_virtual_markers
-from utils.utils import c3d_to_dict, find_repo_root, get_python_settings,  make_plot_title
-from PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
-from OFM.virtual_markers import animate_virtual_markers
-from OFM.segments import segments
-from OFM.kinematics import kinematics
-from plotting.plotting import plot_angles
+from openofm.OFM.virtual_markers import create_virtual_markers, animate_virtual_markers
+from openofm.utils.utils import c3d_to_dict, find_repo_root, get_python_settings, make_plot_title
+from openofm.PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
+from openofm.OFM.segments import segments
+from openofm.OFM.kinematics import kinematics
+from openofm.plotting.plotting import plot_angles
 
 
 

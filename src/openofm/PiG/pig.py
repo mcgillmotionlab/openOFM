@@ -1,21 +1,26 @@
 import numpy as np
-from linear_algebra.linear_algebra import makeunit, gunit, ctransform, create_lcs, rotate_axes, magnitude
+
+from ..linear_algebra.linear_algebra import makeunit, gunit, ctransform, create_lcs, rotate_axes, magnitude
 
 
-def hipjointcentrePiG(data=None):
-    """
-    data = HIPJOINTCENTREPIG_DATA(data,test) computes left and right hip joint
-    centers for plug-in gait (PiG) marker data
-    ARGUMENTS
-      data      ... dict, containing PiG markers. Required markers are
-                    'RASI','LASI','SACR' or 'RASI','LASI','RPSI','LPSI'
-    RETURNS
-      data      ... dict, with appended hip joint center virtual marker as
-                    RHipJC and LHipJC.
-    NOTES
-    - computation method based on Davis et al. "A gait analysis data
-    collection and reduction technique". Hum Mov Sci. 1991. (see also
-    PiG manual)
+def hipjointcentrePiG(data: dict | None = None) -> dict:
+    """Compute left and right hip joint centres using the Plug-in Gait method.
+
+    Parameters
+    ----------
+    data : dict or None, optional
+        Trial data dictionary.  Required markers: ``'RASI'``, ``'LASI'``,
+        and either ``'SACR'`` or both ``'RPSI'`` / ``'LPSI'``.
+
+    Returns
+    -------
+    dict
+        *data* with ``'RHipJC'`` and ``'LHipJC'`` virtual markers appended.
+
+    Notes
+    -----
+    Computation follows Davis et al. (1991) *Hum Mov Sci* and the Vicon
+    Plug-in Gait manual.
     """
 
     # set values from Davis et al. 1991
@@ -79,7 +84,20 @@ def hipjointcentrePiG(data=None):
     return data
 
 
-def kneejointcenterPiG(data):
+def kneejointcenterPiG(data: dict) -> dict:
+    """Compute left and right knee joint centres using the Plug-in Gait chord method.
+
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary.  Required markers: ``'R/LKNE'``, ``'R/LTHI'``,
+        ``'R/LHipJC'``.
+
+    Returns
+    -------
+    dict
+        *data* with ``'RKneeJC'`` and ``'LKneeJC'`` virtual markers appended.
+    """
 
     # Compute joint offsets for knee and ankle
     KneeWidth = (data['parameters']['PROCESSING']['RKneeWidth']['value'] +
@@ -152,7 +170,20 @@ def kneejointcenterPiG(data):
     return data
 
 
-def anklejointcenterPiG(data):
+def anklejointcenterPiG(data: dict) -> dict:
+    """Compute left and right ankle joint centres using the Plug-in Gait chord method.
+
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary.  Required markers: ``'R/LANK'``, ``'R/LTIB'``,
+        ``'R/LKneeJC'``.
+
+    Returns
+    -------
+    dict
+        *data* with ``'RAnkleJC'`` and ``'LAnkleJC'`` virtual markers appended.
+    """
     # Compute joint offsets and ankle
     AnkleWidth = (data['parameters']['PROCESSING']['RAnkleWidth']['value'] +
                   data['parameters']['PROCESSING']['LAnkleWidth']['value']) / 2
@@ -219,13 +250,19 @@ def anklejointcenterPiG(data):
 
 
 def getbones_data(data):
-    """  retrieve "bone" information from data dict and creates joints.
-    Arguments
-        data    ... dict. Data_Paper_Not_Shared containing required channels
+    """Retrieve bone information from data dict and create joints.
+
+    Parameters
+    ----------
+    data : dict
+        Data dictionary containing required channels.
+
     Returns
-        jnt     ...
-        data
-        bone
+    -------
+    jnt : list
+        Joint definition list.
+    bone : list
+        Bone definition list.
     """
     bone = []
     jnt = []
@@ -348,21 +385,28 @@ def getbones_data(data):
 
 
 def chordPiG(a, b, c, delta):
-    """
-     jc = CHORDPIG(a,b,c,delta) computes knee and ankle joint centres according
-     to the plug-in gait 'chord' function
-     ARGUMENTS
-       a       ...  wand marker data (n x 3 matrix)
-       b       ...  proximal joint centre (n x 3 matrix)
-       c       ...  distal marker (n x 3 matrix)
-       delta   ... (jointWidth/2) + mDiameter/2 (double);
-     RETURNS
-       jc      ...  The joint centre in global coordinate system
-     See also bmech_jointcentrePiG, jointcentrePiG_dat
-     NOTES
-     - See vicon user manual for chord function definition (see help fileS)
-     - Thanks to Seungeun Yeon, Mathew Schwartz, Filipe Alves Caixeta,
-       and Robert Van-wesep. See: https://github.com/cadop/pyCGM
+    """Compute knee and ankle joint centres using the Plug-in Gait chord function.
+
+    Parameters
+    ----------
+    a : np.ndarray
+        Wand marker, shape ``(N, 3)``.
+    b : np.ndarray
+        Proximal joint centre, shape ``(N, 3)``.
+    c : np.ndarray
+        Distal marker, shape ``(N, 3)``.
+    delta : float
+        ``(jointWidth / 2) + markerDiameter / 2``.
+
+    Returns
+    -------
+    np.ndarray
+        Joint centre in the global coordinate system, shape ``(N, 3)``.
+
+    Notes
+    -----
+    See the Vicon user manual for chord function definition.
+    Implementation based on https://github.com/cadop/pyCGM
     """
     # make the two vector using 3 markers, which is on the same plane.
     v1 = a - c

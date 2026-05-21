@@ -1,11 +1,25 @@
-from OFM.virtual_markers import create_virtual_markers
-from utils.utils import is_nexus, get_python_settings
-from utils.utils import get_data, set_data
+from .OFM.virtual_markers import create_virtual_markers
+from .utils.utils import is_nexus, get_python_settings, get_data, set_data
 
 TRIAL_TYPE = 'static'
 
 
-def openOFM_static(settings):
+def openOFM_static(settings: dict) -> tuple[dict, dict]:
+    """Run the openOFM static calibration pipeline.
+
+    Parameters
+    ----------
+    settings : dict
+        Processing settings.  Required keys: ``'trial_type'``, ``'file_name'``,
+        ``'version'``, ``'nexus'``.  Optional: ``'processing'``.
+
+    Returns
+    -------
+    sdata : dict
+        Static trial data with virtual markers appended.
+    ofm_dict : dict
+        openOFM calibration parameters.
+    """
 
     # 1: Access static calibration file
     if settings['nexus']:
@@ -25,8 +39,8 @@ def openOFM_static(settings):
     return sdata, ofm_dict
 
 
-if __name__ == "__main__":
-
+def main() -> None:
+    """Entry point for the ``openofm-static`` command."""
     # initialize settings
     settings_params = dict(trial_type=TRIAL_TYPE)
 
@@ -35,7 +49,7 @@ if __name__ == "__main__":
 
     if nexus:
         import sys
-        from utils.utils_nexus import set_nexus_data, get_nexus_data
+        from .utils.utils_nexus import set_nexus_data, get_nexus_data
         settings_params['nexus'] = nexus
         settings_params['version'] = sys.argv[1]
     else:
@@ -59,3 +73,7 @@ if __name__ == "__main__":
 
     # run openOFM static
     openOFM_static(settings=settings_params)
+
+
+if __name__ == "__main__":
+    main()

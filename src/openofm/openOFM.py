@@ -1,14 +1,15 @@
 import os
-import yaml
-from typing import Callable, Union
+from collections.abc import Callable
+from typing import Union
 
-from python.OFM.virtual_markers import create_virtual_markers
-from utils.utils import c3d_to_dict
-from python.PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
-from OFM.virtual_markers import animate_virtual_markers
-from OFM.segments import segments
-from OFM.kinematics import kinematics
-from python.plotting.plotting import plot_angles
+import yaml
+
+from .OFM.virtual_markers import create_virtual_markers, animate_virtual_markers
+from .OFM.segments import segments
+from .OFM.kinematics import kinematics
+from .PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
+from .plotting.plotting import plot_angles
+from .utils.utils import c3d_to_dict
 #todo: should we split stuff about collection session (e.g. marker diameter) from subject_measurements (e.g. knee width)?
 
 
@@ -30,39 +31,19 @@ class openOFM:
 
     def __init__(self, static_file=None, dynamic_file=None, subject_measurements=None, process_options=None,
                  version=None):
+        """Parameters
+        ----------
+        static_file : str or None
+            Path to the static C3D file.
+        dynamic_file : str or None
+            Path to the dynamic C3D file.
+        subject_measurements : dict or None
+            Subject anthropometric parameters (e.g. ankle width, knee width).
+        process_options : dict or None
+            Processing flags.
+        version : str or None
+            openOFM model version (e.g. ``'1.1'``).
         """
-               OpenOFM main class for processing static and dynamic gait trials.
-
-               Parameters
-               ----------
-               static_file : str or None
-                   Path to the static calibration C3D file. Used to define subject-specific anatomical calibration
-                   (e.g., virtual markers, joint geometry). If None, static data must be loaded manually.
-
-               dynamic_file : str or None
-                   Path to the dynamic gait trial C3D file. If None, dynamic data must be loaded manually before
-                   processing.
-
-               subject_measurements : dict or None
-                   Subject-specific Anthropometric parameters (e.g., ankle width, knee width) and settings
-                   (e.g. marker diameter). Used in model scaling and biomechanical computations.
-
-               process_options : dict or None
-                   Configuration dictionary controlling processing behaviour
-                   (e.g., filtering settings, gait event detection method,
-                   joint center computation methods).
-
-               version : str or None
-                   OpenOFM pipeline version. Controls model definitions and algorithmic variations across releases.
-
-               Notes
-               -----
-               Processing follows a two-stage workflow:
-               1. Static calibration defines subject-specific model parameters
-               2. Dynamic trials are processed using static-derived calibration
-
-               Static processing must be completed before dynamic processing.
-               """
 
         # version must be set
         if version is None:
@@ -72,7 +53,6 @@ class openOFM:
         self.static_file = static_file
         self.dynamic_file = dynamic_file
 
-        # subject anthropometric parameters
         self.subject_measurements = subject_measurements
 
         # configuration
@@ -83,14 +63,20 @@ class openOFM:
         self.is_static_processed = False
         self.is_dynamic_processed = False
 
-        # 👇 declare ALL expected attributes here
         self.static_data = None
         self.dynamic_data = None
         self.ofm_parameters = None
 
 
-    def load_static_file(self, filepath=None):
-        """Loads static file data from c3d file to a dictionary"""
+    def load_static_file(self, filepath: str | None = None) -> None:
+        """Load static trial data from a C3D file.
+
+        Parameters
+        ----------
+        filepath : str or None, optional
+            Path to the static C3D file.  When provided, overrides
+            ``self.static_file``.
+        """
 
         if filepath is not None:
             self.static_file = filepath
@@ -104,8 +90,15 @@ class openOFM:
         self.static_data = c3d_to_dict(self.static_file)
 
 
-    def load_dynamic_file(self, filepath=None):
-        """ loads dynamic file data from c3d file to a dictionary"""
+    def load_dynamic_file(self, filepath: str | None = None) -> None:
+        """Load dynamic trial data from a C3D file.
+
+        Parameters
+        ----------
+        filepath : str or None, optional
+            Path to the dynamic C3D file.  When provided, overrides
+            ``self.dynamic_file``.
+        """
 
         if filepath is not None:
             self.dynamic_file = filepath
@@ -118,8 +111,14 @@ class openOFM:
 
         self.dynamic_data = c3d_to_dict(self.dynamic_file)
 
-    def load_subject_measurements(self, filepath):
-        """Load subject measurements from a YAML file stored in filepath."""
+    def load_subject_measurements(self, filepath: str) -> None:
+        """Load subject anthropometric measurements from a YAML file.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to ``subject_measurements.yml``.
+        """
 
         if not os.path.exists(filepath):
             raise FileNotFoundError('File {} not found'.format(filepath))
@@ -128,7 +127,15 @@ class openOFM:
             self.subject_measurements = yaml.safe_load(f)
 
 
-    def process_static_trial(self, process_options=None):
+    def process_static_trial(self, process_options: dict | None = None) -> None:
+        """Run the static calibration pipeline to compute virtual markers.
+
+        Parameters
+        ----------
+        process_options : dict or None, optional
+            Processing flags.  Falls back to
+            :attr:`DEFAULT_PROCESSING_OPTIONS` when ``None``.
+        """
 
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
@@ -146,14 +153,10 @@ class openOFM:
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
-        # --- built-in method ---
         if method == 'pig':
             self.static_data = hipjointcentrePiG(self.static_data)
-
-        # --- user-defined function ---
         elif callable(method):
             self.static_data = method(self.static_data)
-
         else:
             raise ValueError("Unknown method '{}'. Use 'pig' or provide a callable function.".format(method))
 
@@ -163,14 +166,10 @@ class openOFM:
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
-        # --- built-in method ---
         if method == 'pig':
             self.static_data = kneejointcenterPiG(self.static_data)
-
-        # --- user-defined function ---
         elif callable(method):
             self.static_data = method(self.static_data)
-
         else:
             raise ValueError("Unknown method '{}'. Use 'pig' or provide a callable function.".format(method))
 
@@ -179,32 +178,39 @@ class openOFM:
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
-        # --- built-in method ---
         if method == 'pig':
             self.static_data = anklejointcenterPiG(self.static_data)
-
-        # --- user-defined function ---
         elif callable(method):
             self.static_data = method(self.static_data)
-
         else:
             raise ValueError("Unknown method '{}'. Use 'pig' or provide a callable function.".format(method)
             )
 
-    def process_dynamic_file(self):
+    def process_dynamic_file(self) -> None:
+        """Run the full dynamic processing pipeline (animate → segments → kinematics)."""
 
-        #  animate virtual markers
         self.dynamic_data = animate_virtual_markers(self.dynamic_data, self.process_options, self.ofm_parameters,
                                                     self.version)
-
-        # create segments
         self.dynamic_data, r, jnt = segments(self.dynamic_data, self.ofm_parameters, self.version)
-
-        # compute kinematics
         self.dynamic_data = kinematics(self.dynamic_data, r, jnt, self.version)
 
-    def plot_angles(self, vicon_data=None, plot_title="", gsettings=None):
-        """helper function to compare vicon and OFM angles"""
+    def plot_angles(
+        self,
+        vicon_data: dict | None = None,
+        plot_title: str = "",
+        gsettings: dict | None = None,
+    ) -> None:
+        """Plot Oxford Foot Model joint angles.
+
+        Parameters
+        ----------
+        vicon_data : dict or None, optional
+            Vicon reference data for comparison overlay.
+        plot_title : str, optional
+            Figure title.
+        gsettings : dict or None, optional
+            Graphics settings (see :func:`~openofm.plotting.plotting.plot_angles`).
+        """
 
         plot_angles(data=self.dynamic_data, vicon_data=vicon_data, plot_title=plot_title, gsettings=gsettings)
 

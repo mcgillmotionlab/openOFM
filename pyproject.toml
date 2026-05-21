@@ -1,0 +1,47 @@
+[project]
+name = "openofm"
+version = "0.1.0"
+description = "Python implementation of the Oxford Foot Model (OFM) gait analysis pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dependencies = [
+    "ezc3d>=1.5.9",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mcgillmotionlab/openOFM"
+
+[project.scripts]
+openofm-static   = "openofm.static:main"
+openofm-dynamic  = "openofm.dynamic:main"
+openofm-validate = "openofm.validate:main"
+
+[build-system]
+requires = ["setuptools>=78.1.0", "wheel>=0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+docs = [
+    "sphinx>=7.0",
+    "furo>=2024.1.29",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-autobuild>=2024.0.0",
+]
+dev = [
+    "pytest>=8.0",
+]
+
+[[tool.uv.index]]
+name = "testopenofm"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

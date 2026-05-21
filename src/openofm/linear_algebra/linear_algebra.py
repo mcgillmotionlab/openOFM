@@ -1,19 +1,32 @@
 import numpy as np
 
 
-def static2dynamic(o_dyn, x_dyn, y_dyn, z_dyn, mrk_lcl_av):
-    """
-    Creates virtual dynamic version of static marker in global coordinate system of dynamic trial.
+def static2dynamic(
+    o_dyn: np.ndarray,
+    x_dyn: np.ndarray,
+    y_dyn: np.ndarray,
+    z_dyn: np.ndarray,
+    mrk_lcl_av: np.ndarray,
+) -> np.ndarray:
+    """Animate a static virtual marker into the dynamic trial global frame.
 
-    Arguments:
-    o_dyn: numpy array of shape (n, 3) representing the origin of the LCS of dynamic trial.
-    x_dyn: numpy array of shape (n, 3) representing the anterior axis of the LCS of dynamic trial.
-    y_dyn: numpy array of shape (n, 3) representing the lateral axis of the LCS of dynamic trial.
-    z_dyn: numpy array of shape (n, 3) representing the proximal axis of the LCS of dynamic trial.
-    mrk_lcl_av: numpy array of shape (n, 3) representing the virtual markers in LCS of static trial.
+    Parameters
+    ----------
+    o_dyn : np.ndarray
+        Shape ``(N, 3)`` origin of the local coordinate system at each frame.
+    x_dyn : np.ndarray
+        Shape ``(N, 3)`` anterior axis of the LCS at each frame.
+    y_dyn : np.ndarray
+        Shape ``(N, 3)`` lateral axis of the LCS at each frame.
+    z_dyn : np.ndarray
+        Shape ``(N, 3)`` proximal axis of the LCS at each frame.
+    mrk_lcl_av : np.ndarray
+        Shape ``(1, 3)`` averaged virtual marker position in the static LCS.
 
-    Returns:
-    - mrk_dyn: numpy array of shape (n, 3) representing the dynamic version of the static marker.
+    Returns
+    -------
+    np.ndarray
+        Shape ``(N, 3)`` dynamic marker trajectory in the global frame.
     """
     mrk_dyn = np.zeros_like(o_dyn)
     for i in range(len(mrk_dyn)):
@@ -31,23 +44,38 @@ def static2dynamic(o_dyn, x_dyn, y_dyn, z_dyn, mrk_lcl_av):
 
     return mrk_dyn
 
-def create_lcs(O, vec1, vec2, order):
-    """
-     creates a local coordinate system.
-     ARGUMENTS
-       O            ...  n x 3 array: origin of the local coordinate system
-       vec1         ...  n x 3 array: vector representing the first axis
-       vec2         ...  n x 3 array: second vector used to create the axes
+def create_lcs(
+    O: np.ndarray,
+    vec1: np.ndarray,
+    vec2: np.ndarray,
+    order: str,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Create a right-handed local coordinate system from two vectors.
 
-     RETURNS
-       O            ...  n x 3 array: origin of the local coordinate system
-       lcs1         ...  n x 3 array: marker on the first axis of the local
-                         coordinate system
-       lcs2         ...  n x 3 array: marker on the second axis of the local
-                         coordinate system
-       lcs3         ...  n x 3 array: marker on the third axis of the local
-                         coordinate system
-       axes_system  ...  axes system composed of the 3 axes created
+    Parameters
+    ----------
+    O : np.ndarray
+        Shape ``(N, 3)`` or ``(3,)`` origin of the LCS.
+    vec1 : np.ndarray
+        Shape ``(N, 3)`` primary axis vector.
+    vec2 : np.ndarray
+        Shape ``(N, 3)`` secondary vector used to define the plane.
+    order : str
+        Axis construction order.  One of ``'xyz'``, ``'xzy'``, ``'zxy'``,
+        ``'zyx'``, ``'yzx'``, or ``'yxz'``.
+
+    Returns
+    -------
+    O : np.ndarray
+        Origin (unchanged), shape ``(N, 3)``.
+    lcs1 : np.ndarray
+        Marker on the first axis, shape ``(N, 3)``.
+    lcs2 : np.ndarray
+        Marker on the second axis, shape ``(N, 3)``.
+    lcs3 : np.ndarray
+        Marker on the third axis, shape ``(N, 3)``.
+    axes_system : np.ndarray
+        Stacked axis unit vectors, shape ``(3, 3)``.
     """
 
     # error check for n x 3 arrays
@@ -93,17 +121,22 @@ def create_lcs(O, vec1, vec2, order):
     return O, lcs1, lcs2, lcs3, axes_system
 
 
-def angle(m1, m2, ref='deg'):
-    """
-    Calculates the smallest angle between two vectors, m1 and m2
+def angle(m1: np.ndarray, m2: np.ndarray, ref: str = 'deg') -> np.ndarray:
+    """Compute the signed angle between two vector arrays via the arc-sine of the dot product.
 
-    ARGUMENTS
-      m1    ...      list, 1st n x 3 vector
-      m2    ...      list, 2nd n x 3 vector
+    Parameters
+    ----------
+    m1 : np.ndarray
+        Shape ``(N, 3)`` first vector array.
+    m2 : np.ndarray
+        Shape ``(N, 3)`` second vector array.
+    ref : str, optional
+        Output unit: ``'deg'`` (default) or ``'rad'``.
 
-    RETURNS
-      r    ...       list, default = ref, angle n x 3 vector
-
+    Returns
+    -------
+    np.ndarray
+        Shape ``(N,)`` angle values.
     """
 
     dotp = np.diag(np.matmul(m1, np.conj(m2).T))
@@ -116,13 +149,18 @@ def angle(m1, m2, ref='deg'):
     return r
 
 
-def makeunit(vec):
-    """ create a unit vector for n x 3 matrix vec
-    arguments:
-       vec ... N by 3 matrix of vectors. rows are the number of vectors,
-                  columns are XYZ
-    return:
-        unt   ... unit vector
+def makeunit(vec: np.ndarray) -> np.ndarray:
+    """Normalise each row of an ``(N, 3)`` matrix to unit length.
+
+    Parameters
+    ----------
+    vec : np.ndarray
+        Shape ``(N, 3)`` or ``(3,)`` vector array.
+
+    Returns
+    -------
+    np.ndarray
+        Unit vectors with the same shape as *vec*.
     """
 
     # check input shape
@@ -135,34 +173,52 @@ def makeunit(vec):
     return unt
 
 
-def magnitude(r, axis=1):
-    """ compute magnitude of a vector
-     ARGUMENTS
-       r        ...     n x 3 signal or  n x 1 signal
-       axis     ...     int. axis along which to take magnitude. Default = 1 is for magnitude along
-                        each row of an n x 3 signal
-     RETURNS
-       m        ...     np.array. n x 1 or 1. magnitude of the signal
+def magnitude(r: np.ndarray, axis: int = 1) -> np.ndarray:
+    """Compute the Euclidean magnitude along a given axis.
+
+    Parameters
+    ----------
+    r : np.ndarray
+        Shape ``(N, 3)`` or ``(N,)`` signal.
+    axis : int, optional
+        Axis along which the norm is computed.  Default ``1`` gives per-row
+        magnitudes for an ``(N, 3)`` signal.
+
+    Returns
+    -------
+    np.ndarray
+        Magnitude array.
     """
     return np.linalg.norm(r, axis=axis)
 
 
-def gunit():
-    """ Returns the 3x3 identity matrix """
+def gunit() -> np.ndarray:
+    """Return the 3x3 identity matrix (global coordinate system).
+
+    Returns
+    -------
+    np.ndarray
+        Shape ``(3, 3)`` identity matrix.
+    """
     return np.identity(3)
 
 
-def ctransform(c1, c2, vec):
-    """
-    coordinate system transformation of vector vec from coordinate system c1 to c2
+def ctransform(c1: np.ndarray, c2: np.ndarray, vec: np.ndarray) -> np.ndarray:
+    """Transform vector *vec* from coordinate system *c1* to *c2*.
 
-    ARGUMENTS
-      c1    ... initial coordinate system 3 by 3 matrix rows = i,j,k columns = X,Y,Z
-      c2    ... final coordinate system 3 by 3 matrix rows = i,j,k columns = X,Y,Z
-      vec   ... n x 3 matrix in c1 rows = samples; columns X Y Z
+    Parameters
+    ----------
+    c1 : np.ndarray
+        Shape ``(3, 3)`` source coordinate system (rows = i, j, k; cols = X, Y, Z).
+    c2 : np.ndarray
+        Shape ``(3, 3)`` target coordinate system.
+    vec : np.ndarray
+        Shape ``(N, 3)`` or ``(1, 3)`` vectors expressed in *c1*.
 
-    RETURNS
-      vout  ... n x 3 matrix in c2 rows = samples; columns X Y Z
+    Returns
+    -------
+    np.ndarray
+        Shape ``(N, 3)`` vectors expressed in *c2*.
     """
 
     # Use isinstance for more robust type checking (handles subclasses)
@@ -179,7 +235,12 @@ def ctransform(c1, c2, vec):
     return vec2
 
 
-def replace4(p1, p2, p3, p4):
+def replace4(
+    p1: np.ndarray,
+    p2: np.ndarray,
+    p3: np.ndarray,
+    p4: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     n = p1.shape[0]
 
     # Buffers for local coordinates (p1 in system 234, p2 in 341, p3 in 412, p4 in 123)
@@ -253,20 +314,25 @@ def replace4(p1, p2, p3, p4):
     return rep_p1, rep_p2, rep_p3, rep_p4
 
 
-def point_to_plane(p1, p2, p3, p4):
-    """
-     proj_p1 = POINT_TO_PLANE(p1,p2,p3,p4) projects marker p1 into a plane
-     defined by p2, p3, p4
+def point_to_plane(
+    p1: np.ndarray,
+    p2: np.ndarray,
+    p3: np.ndarray,
+    p4: np.ndarray,
+) -> np.ndarray:
+    """Project point *p1* orthogonally onto the plane defined by *p2*, *p3*, *p4*.
 
-     ARGUMENTS
-       p1         ... n x 3 array
-                      Point to be projected onto a plane
-       p2, p3, p4 ... n x 3 arrays defining a plane
+    Parameters
+    ----------
+    p1 : np.ndarray
+        Shape ``(N, 3)`` point to project.
+    p2, p3, p4 : np.ndarray
+        Shape ``(N, 3)`` arrays defining the plane.
 
-     RETURNS
-       proj_p1     ... p1 projected orthogonally onto the plane of p2, p3,
-                       and p4
-     create a vector from a point on the plane that points to p1
+    Returns
+    -------
+    np.ndarray
+        Shape ``(N, 3)`` projected coordinates of *p1*.
     """
     w = p1 - p2
     a = p2 - p4
@@ -284,10 +350,23 @@ def point_to_plane(p1, p2, p3, p4):
     return proj_p1
 
 
-def pointonline(p1, p2, pos):
-    # p1: first point m x 3 matrix
-    # p2: second point m x 3 matrix
-    # pos: distance from p1
+def pointonline(p1: np.ndarray, p2: np.ndarray, pos: float) -> np.ndarray:
+    """Locate a point on the line segment from *p1* to *p2* at fractional position *pos*.
+
+    Parameters
+    ----------
+    p1 : np.ndarray
+        Shape ``(N, 3)`` or ``(1, 3)`` start point.
+    p2 : np.ndarray
+        Shape ``(N, 3)`` or ``(1, 3)`` end point.
+    pos : float
+        Fractional distance from *p1* (0 = *p1*, 1 = *p2*).
+
+    Returns
+    -------
+    np.ndarray
+        Shape ``(N, 3)`` interpolated point coordinates.
+    """
 
     ln = p2 - p1
     [r, _] = ln.shape
@@ -306,17 +385,20 @@ def pointonline(p1, p2, pos):
     return pt
 
 
-def nrmse(a, b):
-    """
-    r = NRMSE(a,b) computes the  root mean squared error between two vectors
-    normalised to the range of signal a
+def nrmse(a: np.ndarray, b: np.ndarray) -> float:
+    """Normalised root-mean-square error between two vectors.
 
-     ARGUMENTS
-       a   ...  1st vector of data
-       b   ...  2nd vector of data
+    Parameters
+    ----------
+    a : np.ndarray
+        Reference signal.
+    b : np.ndarray
+        Comparison signal.
 
-     RETURN
-       r   ...  NRMSE between a and b
+    Returns
+    -------
+    float
+        NRMSE normalised to the range of *a*.
     """
 
     r = rmse(a, b)
@@ -325,15 +407,20 @@ def nrmse(a, b):
     return r / (g - p)
 
 
-def rmse(a, b):
-    """
-    rmse (a,b) computes the root mean squared error between two vectors
-    ARGUMENTS
-      a   ...  1st vector of data
-      b   ...  2nd vector of data
+def rmse(a: np.ndarray, b: np.ndarray) -> float:
+    """Root-mean-square error between two vectors.
 
-     RETURN
-          ...  RMSE between a and b
+    Parameters
+    ----------
+    a : np.ndarray
+        First signal.
+    b : np.ndarray
+        Second signal.
+
+    Returns
+    -------
+    float
+        RMSE value, or ``None`` if the arrays differ in length.
     """
     s = 0
     m = np.size(a)
@@ -347,19 +434,32 @@ def rmse(a, b):
         print('the two vectors are not the same size')
 
 
-def move_marker_gcs_2_lcs(O, A, L, P, M):
-    """
-    Moves marker from GCS to lcs_static for each available frame.
+def move_marker_gcs_2_lcs(
+    O: np.ndarray,
+    A: np.ndarray,
+    L: np.ndarray,
+    P: np.ndarray,
+    M: np.ndarray,
+) -> np.ndarray:
+    """Express marker *M* (global frame) in the local coordinate system defined by O, A, L, P.
 
-    Arguments:
-    O -- n x 3 array, Origin of the technical axes
-    A -- n x 3 array, Anterior axis of the segment
-    L -- n x 3 array, Lateral axis of the segment (medial for right side)
-    P -- n x 3 array, Proximal axis of the segment
-    M -- n x 3 array, Marker coordinates in GCS
+    Parameters
+    ----------
+    O : np.ndarray
+        Shape ``(N, 3)`` LCS origin.
+    A : np.ndarray
+        Shape ``(N, 3)`` anterior axis endpoint.
+    L : np.ndarray
+        Shape ``(N, 3)`` lateral axis endpoint.
+    P : np.ndarray
+        Shape ``(N, 3)`` proximal axis endpoint.
+    M : np.ndarray
+        Shape ``(N, 3)`` marker coordinates in the global frame.
 
-    Returns:
-    m_lcs_static -- n x 3 array, Marker moved from GCS to LCS
+    Returns
+    -------
+    np.ndarray
+        Shape ``(N, 3)`` marker coordinates in the local frame.
     """
     m_lcs_static = np.zeros_like(O)
 
@@ -380,22 +480,22 @@ def move_marker_gcs_2_lcs(O, A, L, P, M):
 
 
 
-def rotate_axes(axes, theta, axis):
-    """
-    Rotate a local coordinate system (axes) by an angle `theta` (in degrees)
-    about one of its local axes ('x', 'y', or 'z').
+def rotate_axes(axes: np.ndarray, theta: float, axis: str) -> np.ndarray:
+    """Rotate a local coordinate system about one of its own axes.
 
-    Parameters:
-        axes : ndarray, shape (3, 3)
-            Local coordinate system, where each row represents an axis vector.
-        theta : float
-            Rotation angle in degrees.
-        axis : str
-            Axis of rotation ('x', 'y', or 'z').
+    Parameters
+    ----------
+    axes : np.ndarray
+        Shape ``(3, 3)`` coordinate system (rows = axis vectors).
+    theta : float
+        Rotation angle in degrees.
+    axis : str
+        Local axis of rotation: ``'x'``, ``'y'``, or ``'z'``.
 
-    Returns:
-        rot_axes : ndarray, shape (3, 3)
-            Rotated coordinate system.
+    Returns
+    -------
+    np.ndarray
+        Shape ``(3, 3)`` rotated coordinate system.
     """
     axis = axis.lower()
     if axis not in ('x', 'y', 'z'):

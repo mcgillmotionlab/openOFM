@@ -1,15 +1,52 @@
 import os
+from typing import Any
+
 import numpy as np
-from linear_algebra.linear_algebra import nrmse
+
+from ..linear_algebra.linear_algebra import nrmse
 
 
-def extract_value(v):
+def extract_value(v: Any) -> Any:
+    """Extract the ``'value'`` field from a parameter dict, or return *v* unchanged.
+
+    Parameters
+    ----------
+    v : Any
+        Raw parameter entry, typically ``{'value': ...}`` from a C3D
+        ``parameters`` block, or any plain value.
+
+    Returns
+    -------
+    Any
+        ``v['value']`` when *v* is a dict with a ``'value'`` key,
+        otherwise *v* itself.
+    """
     if isinstance(v, dict) and 'value' in v:
         return v['value']
     return v
 
-def find_repo_root(test, dirs=(".git",), default=None):
-    """ Finds full local path to root of code repository"""
+def find_repo_root(
+    test: str,
+    dirs: tuple[str, ...] = (".git",),
+    default: str | None = None,
+) -> str:
+    """Find the full local path to the root of the code repository.
+
+    Parameters
+    ----------
+    test : str
+        Starting path for the upward search.
+    dirs : tuple of str, optional
+        Marker directory names that identify the repo root (default ``('.git',)``).
+    default : str or None, optional
+        Fallback path when no marker is found.  Defaults to two levels above
+        this file.
+
+    Returns
+    -------
+    str
+        Absolute path to the repository root.
+    """
     prev, test = None, os.path.abspath(test)
     while prev != test:
         if any(os.path.isdir(os.path.join(test, d)) for d in dirs):
@@ -18,18 +55,26 @@ def find_repo_root(test, dirs=(".git",), default=None):
     return default or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def c3d_to_dict(fl, verbose=False):
-    """ convert c3d file located at fl into dictionary with easily accessible marker data
+def c3d_to_dict(fl: str, verbose: bool = False) -> dict:
+    """Convert a C3D file to a dictionary with easily accessible marker data.
 
-    Arguments:
-        fl      ... str, full path to c3d file
-        verbose ... bool, Default = False. If true, information about processing printed to screen
-    Returns:
-        data    ... dict, c3d file with markers as keys and coordinates as values
+    Parameters
+    ----------
+    fl : str
+        Full path to the C3D file.
+    verbose : bool, optional
+        If ``True``, print progress information during loading.  Default ``False``.
 
-    Notes:
-        - For details on reading c3d with ezc3d see:
-        https://github.com/pyomeca/ezc3d#python-3
+    Returns
+    -------
+    dict
+        Dictionary with marker names as keys and ``(N, 3)`` coordinate arrays
+        as values.  Also contains ``'parameters'`` and ``'header'`` sub-dicts.
+
+    Notes
+    -----
+    For details on reading C3D files with ezc3d see
+    https://github.com/pyomeca/ezc3d#python-3
     """
 
     import ezc3d
@@ -70,8 +115,41 @@ def c3d_to_dict(fl, verbose=False):
     return data
 
 
-def addchannelsgs(data, KIN):
-    """ helper function to add all the computed data to the data dict"""
+def set_params(side: str, marker_lcl_av: np.ndarray, data: dict, marker: str) -> None:
+    """Store averaged local-coordinate virtual-marker position in the C3D parameter dict.
+
+    Parameters
+    ----------
+    side : str
+        Body side identifier, ``'R'`` or ``'L'``.
+    marker_lcl_av : np.ndarray
+        Shape ``(1, 3)`` array with the averaged X, Y, Z local coordinates.
+    data : dict
+        Trial data dictionary whose ``parameters['PROCESSING']`` block is updated
+        in-place.
+    marker : str
+        Marker name suffix, e.g. ``'D1M0'`` → keys ``'%RD1M0X_openOFM'`` …
+    """
+    data['parameters']['PROCESSING']['%' + side + marker + 'X_openOFM'] = marker_lcl_av[0, 0]
+    data['parameters']['PROCESSING']['%' + side + marker + 'Y_openOFM'] = marker_lcl_av[0, 1]
+    data['parameters']['PROCESSING']['%' + side + marker + 'Z_openOFM'] = marker_lcl_av[0, 2]
+
+
+def addchannelsgs(data: dict, KIN: dict) -> dict:
+    """Add all computed kinematic channels to the trial data dictionary.
+
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary, updated in-place.
+    KIN : dict
+        Computed joint angles keyed by joint/segment name.
+
+    Returns
+    -------
+    dict
+        Updated *data* dictionary.
+    """
     sides = ['Right', 'Left']
     for side in sides:
         data[side + 'HFTBA_x'] = KIN[side + 'AnkleOFM']['flx']
@@ -101,8 +179,23 @@ def addchannelsgs(data, KIN):
     return data
 
 
-def getDir(data, ch=None):
-    """ get direction of movement based on marker ch"""
+def getDir(data: dict, ch: str | None = None) -> str:
+    """Determine the direction of movement from a reference marker trajectory.
+
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary containing marker arrays.
+    ch : str or None, optional
+        Channel name to use as reference.  When ``None`` the function falls
+        back to ``'RPSI'`` / ``'SACR'`` / ``'RPCA'`` in that order.
+
+    Returns
+    -------
+    str
+        Walk direction string: one of ``'Ipos'``, ``'Ineg'``, ``'Jpos'``,
+        ``'Jneg'``.
+    """
 
     # use PiG pelvis marker or inputted channel
     if ch is None:
@@ -147,8 +240,23 @@ def getDir(data, ch=None):
     return walkDir
 
 
-def getDirStat(data, ch=None):
-    """ get direction of standing based on foot markers"""
+def getDirStat(data: dict, ch: str | None = None) -> str:
+    """Determine the direction of standing from foot marker positions.
+
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary containing at least ``'RPCA'`` and ``'RD1M'``
+        marker arrays.
+    ch : str or None, optional
+        Unused.  Reserved for future extension.
+
+    Returns
+    -------
+    str
+        Standing direction string: one of ``'Ipos'``, ``'Ineg'``, ``'Jpos'``,
+        ``'Jneg'``.
+    """
 
     prox = data['RPCA']
     dist = data['RD1M']
@@ -181,7 +289,7 @@ def getDirStat(data, ch=None):
     return standDir
 
 
-def get_data(settings):
+def get_data(settings: dict) -> tuple[dict, dict]:
     # extract settings
     trial_type = settings['trial_type']
     file_name = settings['file_name']
@@ -255,7 +363,7 @@ def get_data(settings):
     return data, settings
 
 
-def set_data(data, settings):
+def set_data(data: dict, settings: dict) -> None:
     # 1.0 get path to c3d files
     ROOT_DIR = find_repo_root(os.path.dirname(__file__))
     DATA_DIR = os.path.join(ROOT_DIR, settings['data_dir'])
@@ -271,8 +379,15 @@ def set_data(data, settings):
             print(key, '=', value, file=f)
 
 
-def is_nexus():
-    """ check if user is running openOFM via Vicon Nexus"""
+def is_nexus() -> bool:
+    """Check whether openOFM is being invoked from inside Vicon Nexus.
+
+    Returns
+    -------
+    bool
+        ``True`` when a Nexus session with an active trial is detected,
+        ``False`` otherwise.
+    """
     import warnings
     try:
         # check if vicon api is installed
@@ -306,7 +421,7 @@ def is_nexus():
     return nexus
 
 
-def get_settings():
+def get_settings() -> dict:
 
     import warnings
     try:
@@ -344,8 +459,20 @@ def get_settings():
     return settings
 
 
-def get_python_settings(args):
-    """ helper method to load appropriate files"""
+def get_python_settings(args: dict) -> dict:
+    """Load subject-measurement settings from a YAML file.
+
+    Parameters
+    ----------
+    args : dict
+        Argument dictionary that must contain ``'data_dir'``.
+
+    Returns
+    -------
+    dict
+        Contents of the ``subject_measurements.yml`` file found in
+        ``<repo_root>/<data_dir>/``.
+    """
     import yaml
 
     # extract arguments to dictionary
@@ -358,8 +485,21 @@ def get_python_settings(args):
     return python_settings
 
 
-def make_plot_title(settings):
-    """ helper function to generate a plot title"""
+def make_plot_title(settings: dict) -> str:
+    """Generate a descriptive plot title from trial settings.
+
+    Parameters
+    ----------
+    settings : dict
+        Must contain keys ``'data_dir'``, ``'file_name'``, and
+        ``'processing'`` (with sub-keys ``'LHindFootFlat'``,
+        ``'RHindFootFlat'``, ``'LUseFloorFF'``, ``'RUseFloorFF'``).
+
+    Returns
+    -------
+    str
+        Human-readable title string.
+    """
     subject = os.path.join(settings['data_dir'], settings['file_name'])
     plot_title = "{} LHFF({}) RHFF({}) LUseFloor({}) RUseFloor({})".format(
         subject, str(settings['processing']['LHindFootFlat']), str(settings['processing']['RHindFootFlat']),
@@ -368,7 +508,7 @@ def make_plot_title(settings):
     # plot_title = "plot"
     return plot_title
 
-def get_nrmse(data_raw, data_processed):
+def get_nrmse(data_raw: dict, data_processed: dict) -> dict:
     sides = ['Right', 'Left']
     for side in sides:
         s = side[0]
