@@ -290,6 +290,22 @@ def getDirStat(data: dict, ch: str | None = None) -> str:
 
 
 def get_data(settings: dict) -> tuple[dict, dict]:
+    """Load a C3D trial file and populate processing settings.
+
+    Parameters
+    ----------
+    settings : dict
+        Processing settings.  Required keys: ``'trial_type'``, ``'file_name'``,
+        ``'version'``, ``'data_dir'``.  Optional: ``'processing'``,
+        ``'use_settings'``, ``'subject_params'``.
+
+    Returns
+    -------
+    data : dict
+        Loaded C3D data dictionary with parameters block populated.
+    settings : dict
+        Updated settings dictionary with ``'processing'`` sub-dict added.
+    """
     # extract settings
     trial_type = settings['trial_type']
     file_name = settings['file_name']
@@ -364,6 +380,16 @@ def get_data(settings: dict) -> tuple[dict, dict]:
 
 
 def set_data(data: dict, settings: dict) -> None:
+    """Write openOFM processing parameters to ``parameters.txt``.
+
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary whose ``parameters['PROCESSING']`` block
+        contains the openOFM parameters to persist.
+    settings : dict
+        Processing settings.  Required key: ``'data_dir'``.
+    """
     # 1.0 get path to c3d files
     ROOT_DIR = find_repo_root(os.path.dirname(__file__))
     DATA_DIR = os.path.join(ROOT_DIR, settings['data_dir'])
@@ -422,7 +448,14 @@ def is_nexus() -> bool:
 
 
 def get_settings() -> dict:
+    """Build a minimal settings dictionary for Nexus or standalone Python mode.
 
+    Returns
+    -------
+    dict
+        Settings dict containing ``'nexus'`` (bool) and, when running inside
+        Vicon Nexus, ``'version'`` extracted from ``sys.argv``.
+    """
     import warnings
     try:
         # check if vicon api is installed
@@ -509,6 +542,21 @@ def make_plot_title(settings: dict) -> str:
     return plot_title
 
 def get_nrmse(data_raw: dict, data_processed: dict) -> dict:
+    """Compute NRMSE between openOFM and Vicon-processed kinematic channels.
+
+    Parameters
+    ----------
+    data_raw : dict
+        openOFM-processed trial data.
+    data_processed : dict
+        Vicon-processed reference data for comparison.
+
+    Returns
+    -------
+    dict
+        *data_raw* updated in-place with ``'nrmse<side><channel>'`` string
+        entries for each kinematic channel.
+    """
     sides = ['Right', 'Left']
     for side in sides:
         s = side[0]
@@ -541,8 +589,3 @@ def get_nrmse(data_raw: dict, data_processed: dict) -> dict:
     return data_raw
 
 
-def set_params(side, marker_lcl_av, sdata, marker):
-    marker_openOFMs = [marker + 'X_openOFM', marker + 'Y_openOFM', marker + 'Z_openOFM']
-    for i, marker_openOFM in enumerate(marker_openOFMs):
-        sdata['parameters']['PROCESSING']['%' + side + marker_openOFM] = {}
-        sdata['parameters']['PROCESSING']['%' + side + marker_openOFM] = marker_lcl_av[0, i]

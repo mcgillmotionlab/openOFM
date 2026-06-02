@@ -29,19 +29,27 @@ class openOFM:
     KJCMethod = Union[str, Callable[[dict], dict]]
     AJCMethod = Union[str, Callable[[dict], dict]]
 
-    def __init__(self, static_file=None, dynamic_file=None, subject_measurements=None, process_options=None,
-                 version=None):
-        """Parameters
+    def __init__(
+        self,
+        static_file: str | None = None,
+        dynamic_file: str | None = None,
+        subject_measurements: dict | None = None,
+        process_options: dict | None = None,
+        version: str | None = None,
+    ) -> None:
+        """Initialise an openOFM processing session.
+
+        Parameters
         ----------
-        static_file : str or None
+        static_file : str or None, optional
             Path to the static C3D file.
-        dynamic_file : str or None
+        dynamic_file : str or None, optional
             Path to the dynamic C3D file.
-        subject_measurements : dict or None
+        subject_measurements : dict or None, optional
             Subject anthropometric parameters (e.g. ankle width, knee width).
-        process_options : dict or None
+        process_options : dict or None, optional
             Processing flags.
-        version : str or None
+        version : str or None, optional
             openOFM model version (e.g. ``'1.1'``).
         """
 
@@ -148,7 +156,16 @@ class openOFM:
 
         self.static_data, self.ofm_parameters = create_virtual_markers(self.static_data, self.process_options, self.version)
 
-    def compute_hip_joint_center(self, method: HJCMethod = 'pig'):
+    def compute_hip_joint_center(self, method: HJCMethod = 'pig') -> None:
+        """Compute the hip joint centre and store it in ``self.static_data``.
+
+        Parameters
+        ----------
+        method : str or callable, optional
+            Method to use.  ``'pig'`` (default) uses the Plug-in Gait
+            Davis et al. (1991) approach.  A callable receives
+            ``self.static_data`` and must return the updated data dict.
+        """
         #todo: allow upper case PIG or mixed PiG to still work
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
@@ -161,8 +178,16 @@ class openOFM:
             raise ValueError("Unknown method '{}'. Use 'pig' or provide a callable function.".format(method))
 
 
-    def compute_knee_joint_center(self, method: KJCMethod = 'pig'):
+    def compute_knee_joint_center(self, method: KJCMethod = 'pig') -> None:
+        """Compute the knee joint centre and store it in ``self.static_data``.
 
+        Parameters
+        ----------
+        method : str or callable, optional
+            Method to use.  ``'pig'`` (default) uses the Plug-in Gait chord
+            method.  A callable receives ``self.static_data`` and must return
+            the updated data dict.
+        """
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
@@ -173,8 +198,16 @@ class openOFM:
         else:
             raise ValueError("Unknown method '{}'. Use 'pig' or provide a callable function.".format(method))
 
-    def compute_ankle_joint_center(self, method: AJCMethod = 'pig'):
+    def compute_ankle_joint_center(self, method: AJCMethod = 'pig') -> None:
+        """Compute the ankle joint centre and store it in ``self.static_data``.
 
+        Parameters
+        ----------
+        method : str or callable, optional
+            Method to use.  ``'pig'`` (default) uses the Plug-in Gait chord
+            method.  A callable receives ``self.static_data`` and must return
+            the updated data dict.
+        """
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
