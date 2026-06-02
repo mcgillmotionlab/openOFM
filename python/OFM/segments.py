@@ -142,12 +142,11 @@ def segments(data, version):
         # =======================================================================
 
         # Extract markers
-        PCA = data[side + 'PCA']
-        HEE = data[side + 'HEE']
+        PCA, HEE = (data[side + name] for name in ['PCA', 'HEE'])
 
         # Create wholefoot axes
         lcs_order = 'zyx' if version == '1.0' else 'xzy'
-        WLF0, WLF1, WLF2, WLF3, _ = create_lcs(HEE, projTOE - HEE, PCA - HEE, lcs_order)
+        WLF0, WLF1, WLF2, WLF3, _ = create_lcs(HEE, TOE - HEE, TIB2, lcs_order) #in PiG, the vertical tibia axis is used to define foot medio-lateral axis
         # Add as new channels
         for i, value in enumerate([WLF0, WLF1, WLF2, WLF3]):
             data[f'{side}WLF{i}'] = value
