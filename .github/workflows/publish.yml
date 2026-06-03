@@ -27,14 +27,7 @@ jobs:
       - name: Build
         run: uv build
 
-      - name: Publish to TestPyPI
-        if: contains(github.ref_name, 'rc') || contains(github.ref_name, 'b')
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        run: uv publish --index testopenofm
-
       - name: Publish to PyPI
-        if: "!contains(github.ref_name, 'rc') && !contains(github.ref_name, 'b')"
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: uv publish
