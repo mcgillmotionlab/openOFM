@@ -14,7 +14,7 @@ from plotting.plotting import plot_angles
 # path to raw static file, raw dynamic file, and settings file
 DATA_DIR = os.path.join(find_repo_root(os.path.dirname(__file__)), 'Josh_Data', 'P06')
 fl_static = os.path.join(DATA_DIR, 'static01.c3d')
-fl_dynamic = os.path.join(DATA_DIR, 'dynamic01.c3d')
+fl_dynamic = os.path.join(DATA_DIR, 'dynamic02.c3d')
 settings_file_path = os.path.join(DATA_DIR, 'settings.yml')
 
 def midknee_process(plot:bool, export:bool, subject:str = None)-> dict:
@@ -58,11 +58,14 @@ def midknee_process(plot:bool, export:bool, subject:str = None)-> dict:
         data['parameters']['PROCESSING'][key] = {}
         data['parameters']['PROCESSING'][key]['value'] = value
 
+    data['parameters']['PROCESSING']['MarkerDiameter']={}
+    data['parameters']['PROCESSING']['MarkerDiameter']['value']=9.5
+
     # 5: Create dynamic version of virtual markers present in static trial + compute phi and omega
     data = animate_virtual_markers(data, settings)
 
     # 6: Create virtual segment embedded axes
-    data, r, jnt = segments(data, settings)
+    data, r, jnt = segments(data, settings['version'])
 
     # 7: Compute joint angles according to Grood and Suntay method
     data = kinematics(data, r, jnt, settings['version'])
@@ -159,7 +162,7 @@ def export_csv(data: dict, subject: str, contains: str):
 
 if __name__ == "__main__":
 
-    subject = '061OF' # To process a new participant you also need to change the dir above (line 15)
+    subject = '062OF' # To process a new participant you also need to change the dir above (line 15)
 
     data = midknee_process(plot=False, export=False, subject=subject)
     print(data.keys())
