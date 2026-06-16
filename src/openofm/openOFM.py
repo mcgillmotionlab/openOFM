@@ -10,8 +10,9 @@ from .OFM.kinematics import kinematics
 from .PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
 from .plotting.plotting import plot_angles
 from .utils.utils import c3d_to_dict
-#todo: should we split stuff about collection session (e.g. marker diameter) from subject_measurements (e.g. knee width)?
 
+#todo: should we split stuff about collection session (e.g. marker diameter) from subject_measurements (e.g. knee width)?
+#todo: initialize with version 1.0 instead of None and raising an error?
 
 
 
@@ -29,14 +30,9 @@ class openOFM:
     KJCMethod = Union[str, Callable[[dict], dict]]
     AJCMethod = Union[str, Callable[[dict], dict]]
 
-    def __init__(
-        self,
-        static_file: str | None = None,
-        dynamic_file: str | None = None,
-        subject_measurements: dict | None = None,
-        process_options: dict | None = None,
-        version: str | None = None,
-    ) -> None:
+    def __init__(self, static_file: str | None = None, dynamic_file: str | None = None,
+                 subject_measurements: dict | None = None, process_options: dict | None = None,
+                 version: str | None = None,) -> None:
         """Initialise an openOFM processing session.
 
         Parameters
@@ -50,7 +46,7 @@ class openOFM:
         process_options : dict or None, optional
             Processing flags.
         version : str or None, optional
-            openOFM model version (e.g. ``'1.1'``).
+            openOFM model version. Options 1.0 or 1.1.
         """
 
         # version must be set
@@ -145,6 +141,7 @@ class openOFM:
             :attr:`DEFAULT_PROCESSING_OPTIONS` when ``None``.
         """
 
+
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
@@ -153,6 +150,8 @@ class openOFM:
 
         if self.process_options is None:
             self.process_options = self.DEFAULT_PROCESSING_OPTIONS.copy()
+        else:
+            self.process_options = process_options
 
         self.static_data, self.ofm_parameters = create_virtual_markers(self.static_data, self.process_options, self.version)
 
@@ -242,7 +241,7 @@ class openOFM:
         plot_title : str, optional
             Figure title.
         gsettings : dict or None, optional
-            Graphics settings (see :func:`~openofm.plotting.plotting.plot_angles`).
+            Graphics settings (see: func:`~openofm.plotting.plotting.plot_angles`).
         """
 
         plot_angles(data=self.dynamic_data, vicon_data=vicon_data, plot_title=plot_title, gsettings=gsettings)

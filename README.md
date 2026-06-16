@@ -1,7 +1,9 @@
 # openOFM
-Code repository for the openOFM project. See manuscript below for full mathematical details and further instructions:
+Code repository for the openOFM project. See the manuscript below for full mathematical details and further instructions:
 
-Dixon, P. C., Drew, E. E., McBride, S. P., Harrington, M., Stebbins, J., & Zavatsky, A. B. (2025). OpenOFM: an open-source implementation of the multi-segment Oxford Foot Model. Computer Methods in Biomechanics and Biomedical Engineering, 1-14. https://doi.org/10.1080/10255842.2024.2448558
+Dixon, P. C., Drew, E. E., McBride, S. P., Harrington, M., Stebbins, J., & Zavatsky, A. B. (2025). OpenOFM: an 
+open-source implementation of the multi-segment Oxford Foot Model. Computer Methods in Biomechanics and Biomedical 
+Engineering, 1-14. https://doi.org/10.1080/10255842.2024.2448558
 
 ## Running in Python
 
@@ -10,7 +12,7 @@ Python users must set up an appropriate environment to run openOFM.
 The following steps assume the user has installed the Anaconda or Mini-
 conda python distribution and has launched a terminal (Mac OS/Linux) or
 command prompt (PC). Similar commands can be run via Python IDEs.
-1. Create environment: ``conda create --name openOFM python=3.9 -y``
+1. Create environment: ``conda create --name openOFM python=3.14 -y``
 2. Activate environment: ``conda activate openOFM``
 3. Change directory to python subdirectory of the openOFM repository:
 ``cd ...\openOFM\python``
@@ -70,6 +72,14 @@ tings.manualAnthro (line 9) to True, and add the measure to section
 Note, the ``openOFM_process.m`` should be modified for use with a user’s own
 data as it defaults to running version 1.1 on the Data_Sample participant
 with placeholder values in the settings.
+
+### Installing a dev environment
+
+- conda create -n openOFM-dev python=3.14
+- conda activate openOFM-dev
+- cd openOFM root folder of the repository
+- install the dev dependencies from the pyoproject.toml file: ``pip install -e ".[dev]"``
+
 
 ## Citation
 If openOFM was useful to you, please cite our work: Dixon, P. C., Drew, E. E., McBride, S. P., Harrington, M., Stebbins, J., & Zavatsky, A. B. (2025). OpenOFM: an open-source implementation of the multi-segment Oxford Foot Model. Computer Methods in Biomechanics and Biomedical Engineering, 1-14.
