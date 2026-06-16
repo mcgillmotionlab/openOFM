@@ -1,14 +1,7 @@
 import numpy as np
 
-from ..linear_algebra.linear_algebra import (
-    static2dynamic,
-    create_lcs,
-    point_to_plane,
-    replace4,
-    move_marker_gcs_2_lcs,
-    magnitude,
-)
-from ..utils.utils import getDirStat, set_params, extract_value
+from openofm.OFM.linear_algebra import static2dynamic, create_lcs, point_to_plane, replace4, move_marker_gcs_2_lcs, magnitude
+from openofm.utils.utils import getDirStat, set_params, extract_value
 
 
 def create_virtual_markers(
