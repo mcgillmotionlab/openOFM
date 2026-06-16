@@ -1,9 +1,51 @@
 import os
 from typing import Any
-
+from pathlib import Path
+import urllib.request
 import numpy as np
+import requests
+from pathlib import Path
 
 from ..linear_algebra.linear_algebra import nrmse
+
+
+API_BASE = "https://api.github.com/repos/mcgillmotionlab/openOFM/contents"
+
+
+def _download_file(url, out_path):
+    r = requests.get(url)
+    r.raise_for_status()
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "wb") as f:
+        f.write(r.content)
+
+
+def _fetch_folder(folder, out_dir):
+    api_url = f"{API_BASE}/{folder}"
+    r = requests.get(api_url)
+    r.raise_for_status()
+
+    items = r.json()
+
+    for item in items:
+        if item["type"] == "file":
+            out_path = Path(out_dir) / item["name"]
+            _download_file(item["download_url"], out_path)
+
+        elif item["type"] == "dir":
+            _fetch_folder(f"{folder}/{item['name']}", Path(out_dir) / item["name"])
+
+
+def fetch_dataset(name="Data_Sample", cache_dir="~/.openofm"):
+    cache_dir = Path(cache_dir).expanduser()
+    target = cache_dir / name
+
+    if target.exists():
+        return target
+
+    _fetch_folder(name, target)
+    return target
 
 
 def extract_value(v: Any) -> Any:
@@ -587,5 +629,6 @@ def get_nrmse(data_raw: dict, data_processed: dict) -> dict:
             round(nrmse(data_processed[s + 'ArchHeight'][:, 2], data_raw[s + 'ArchHeight'][:, 2]), 4))
 
     return data_raw
+
 
 

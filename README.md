@@ -5,22 +5,30 @@ Dixon, P. C., Drew, E. E., McBride, S. P., Harrington, M., Stebbins, J., & Zavat
 open-source implementation of the multi-segment Oxford Foot Model. Computer Methods in Biomechanics and Biomedical 
 Engineering, 1-14. https://doi.org/10.1080/10255842.2024.2448558
 
-## Running in Python
 
-### Environment setup
-Python users must set up an appropriate environment to run openOFM.
-The following steps assume the user has installed the Anaconda or Mini-
-conda python distribution and has launched a terminal (Mac OS/Linux) or
-command prompt (PC). Similar commands can be run via Python IDEs.
-1. Create environment: ``conda create --name openOFM python=3.14 -y``
-2. Activate environment: ``conda activate openOFM``
-3. Change directory to python subdirectory of the openOFM repository:
-``cd ...\openOFM\python``
-4. Install packages: ``conda install --y --file requirements.txt``
-5. If the ezc3d package does not install, add conda-forge to channels before
-trying step 4 again: ``conda config --add channels conda-forge``
+## Overview
+openOFM is an open-source toolbox for computation of multi-segment foot biomechanics according to the Oxford Foot Model. 
 
-### Running the openOFM Python scripts
+There are 2 ways to access/interact with the toolbox: 
+1. Install as a python package using pip (see Installing the openOFM Python package)
+2. Clone/download the repository directly from github: https://github.com/mcgillmotionlab/openOFM
+
+Note: Approach 2 provides access to both Python and Matlab versions of the toolbox
+
+
+## Installing the openOFM Python package
+openOFM is now on pypi.org, install in your environment/version of choice: 
+
+- Install the latest stable version: ``pip install openofm``
+- Install a specific version ``pip install openofm==1.0.0``
+- Upgrade your installation to the latest version ``pip install --upgrade openofm``
+
+
+
+
+
+
+## Running the openOFM Python scripts
 Users may run the Python scripts using two main approaches.
 First, users may run the ``openOFM_static.py`` and ``openOFM_dynamic.py``
 files directly (also used by Nexus). Running these files without any arguments
@@ -51,6 +59,20 @@ into their analysis or modify computations.
 An additional ``openOFM_validate.py`` script compares openOFM python
 (version 1.0) and Vicon implementations using the sample data provided.
 Running this script will display OFM kinematics for both implementations.
+
+
+### Environment setup
+Python users must set up an appropriate environment to run openOFM.
+The following steps assume the user has installed the Anaconda or Mini-
+conda python distribution and has launched a terminal (Mac OS/Linux) or
+command prompt (PC). Similar commands can be run via Python IDEs.
+1. Create environment: ``conda create --name openOFM python=3.14 -y``
+2. Activate environment: ``conda activate openOFM``
+3. Change directory to python subdirectory of the openOFM repository:
+``cd ...\openOFM\python``
+4. Install packages: ``conda install --y --file requirements.txt``
+5. If the ezc3d package does not install, add conda-forge to channels before
+trying step 4 again: ``conda config --add channels conda-forge``
 
 ## Running in Matlab
 

@@ -1,5 +1,5 @@
 [project]
-name = "openOFM"
+name = "openofm"
 version = "1.1.0"
 description = "Python implementation of the Oxford Foot Model (OFM) gait analysis pipeline"
 readme = "README.md"
