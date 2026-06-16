@@ -3,7 +3,26 @@ import numpy as np
 from viconnexusapi import ViconNexus
 
 
-def get_nexus_data(settings):
+def get_nexus_data(settings: dict) -> tuple[dict, dict]:
+    """Load the active Vicon Nexus trial into a data dictionary.
+
+    Parameters
+    ----------
+    settings : dict
+        Processing settings.  Required key: ``'trial_type'``
+        (``'static'`` or ``'dynamic'``).
+
+    Returns
+    -------
+    data : dict
+        Trial data dictionary with marker trajectories and a
+        ``parameters['PROCESSING']`` sub-dict populated from Nexus subject
+        parameters.
+    settings : dict
+        Settings extended with a ``'processing'`` sub-dict containing
+        ``LHindFootFlat``, ``RHindFootFlat``, ``LUseFloorFF``,
+        ``RUseFloorFF``.
+    """
     vicon = ViconNexus.ViconNexus()
 
     region = vicon.GetTrialRegionOfInterest()
@@ -47,7 +66,20 @@ def get_nexus_data(settings):
     return data, settings
 
 
-def set_nexus_data(data, trial_type):
+def set_nexus_data(data: dict, trial_type: str) -> None:
+    """Write openOFM results back to the active Vicon Nexus trial.
+
+    Parameters
+    ----------
+    data : dict
+        Processed trial data dictionary.  For a static trial the
+        ``parameters['PROCESSING']`` block must contain the openOFM
+        parameters.  For a dynamic trial the angle channel arrays must
+        be present.
+    trial_type : str
+        ``'static'`` writes subject parameters; ``'dynamic'`` writes
+        model-output angle trajectories.
+    """
     from viconnexusapi import ViconNexus
     vicon = ViconNexus.ViconNexus()
 

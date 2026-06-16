@@ -11,7 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write
+      id-token: write   # required for PyPI Trusted Publishing (OIDC)
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/openofm
 
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +32,6 @@ jobs:
         run: uv build
 
       - name: Publish to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: uv publish
+        # Configure the trusted publisher at:
+        # https://pypi.org/manage/project/openofm/settings/publishing/

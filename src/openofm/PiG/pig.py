@@ -444,7 +444,36 @@ def chordPiG(a, b, c, delta):
     return jc
 
 
-def prep_bones(data, bone, dimOFM=None):
+def prep_bones(
+    data: dict,
+    bone: list,
+    dimOFM: list[str] | None = None,
+) -> dict:
+    """Build per-segment reference-frame dictionaries from labelled bone channels.
+
+    Each segment is described by four channels whose suffixes are given by
+    *dimOFM*: index 0 is the origin; indices 1-3 are axis endpoints along
+    the anterior (x), medial/lateral (y), and long (z) directions.
+
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary containing the bone-axis marker channels.
+    bone : list
+        Bone definition list.  Each entry is a 2-element list
+        ``[channel_prefix, segment_name]``.  A prefix of ``'GLB'`` creates a
+        static global reference frame.
+    dimOFM : list of str or None, optional
+        Channel-suffix list corresponding to origin, x-axis, y-axis, and
+        z-axis endpoints.  Defaults to ``['0', '1', '2', '3']``.
+
+    Returns
+    -------
+    dict
+        Segment reference-frame dictionary keyed by segment name.  Each value
+        is ``{'ort': list_of_3x3_arrays}`` where each ``(3, 3)`` array
+        contains the three normalised axis vectors for that frame.
+    """
     # 0 is origin of bone (zero)
     # x points "forward"
     # y points "up"
@@ -473,8 +502,22 @@ def prep_bones(data, bone, dimOFM=None):
     return r
 
 
-def getdata(d):
-    """ helper function to organize matrices"""
+def getdata(d: list) -> list:
+    """Organise four bone-axis marker arrays into a per-frame axis matrix list.
+
+    Parameters
+    ----------
+    d : list
+        Four ``(N, 3)`` arrays: ``d[0]`` origin, ``d[1]`` x-axis endpoint,
+        ``d[2]`` y-axis endpoint, ``d[3]`` z-axis endpoint.
+
+    Returns
+    -------
+    list
+        Length-N list of ``(3, 3)`` arrays.  Each row is one normalised
+        (scaled by 1/10) axis vector: anterior (x), medial/lateral (y),
+        and long-axis (z).
+    """
     #todo: check the division by 10
     x = (d[1] - d[0]) / 10  # "Forward" - Origin: Creates anterior vector
     y = (d[2] - d[0]) / 10  # "Up" - Origin: Creates medial vector (right side), Lateral vector (left side)

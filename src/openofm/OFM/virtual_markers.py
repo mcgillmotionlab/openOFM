@@ -426,10 +426,33 @@ def animate_virtual_markers(
     return data
 
 
-def midpoint_joint_center(data, marker1_name, marker2_name, midpoint_name):
-# midpoint_name is the string for the joint center name
+def midpoint_joint_center(
+    data: dict,
+    marker1_name: str,
+    marker2_name: str,
+    midpoint_name: str,
+) -> dict:
+    """Compute a bilateral joint centre as the midpoint of two markers.
 
-# Define sides
+    Parameters
+    ----------
+    data : dict
+        Trial data dictionary.  For each side (``'R'`` / ``'L'``) it must
+        contain ``side + marker1_name`` and ``side + marker2_name``.
+    marker1_name : str
+        Marker name suffix for the first landmark (without side prefix).
+    marker2_name : str
+        Marker name suffix for the second landmark (without side prefix).
+    midpoint_name : str
+        Key suffix used to store the resulting midpoint in *data*.
+
+    Returns
+    -------
+    dict
+        *data* updated in-place with ``'R' + midpoint_name`` and
+        ``'L' + midpoint_name`` entries.
+    """
+    # Define sides
     sides = ['R', 'L']
 
     # Iterate over sides

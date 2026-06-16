@@ -16,6 +16,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/mcgillmotionlab/openOFM"
+Documentation = "https://mcgillmotionlab.github.io/openOFM"
+Repository = "https://github.com/mcgillmotionlab/openOFM"
+"Bug Tracker" = "https://github.com/mcgillmotionlab/openOFM/issues"
 
 [project.scripts]
 openofm-static   = "openofm.static:main"
@@ -23,11 +26,11 @@ openofm-dynamic  = "openofm.dynamic:main"
 openofm-validate = "openofm.validate:main"
 
 [build-system]
-requires = ["setuptools>=78.1.0", "wheel>=0.45.1"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/openofm"]
 
 [dependency-groups]
 docs = [
@@ -38,6 +41,7 @@ docs = [
 ]
 dev = [
     "pytest>=8.0",
+    "hatchling>=1.25",
 ]
 
 

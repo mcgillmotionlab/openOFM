@@ -241,6 +241,24 @@ def replace4(
     p3: np.ndarray,
     p4: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Smooth four inter-dependent markers by averaging local-frame positions.
+
+    Each marker is expressed in the local coordinate system built from the
+    other three, averaged over all frames, then projected back to the global
+    frame and blended with the original trajectory.  This is the Python
+    equivalent of the BodyBuilder ``Replace4`` function used in the Oxford
+    Foot Model pipeline.
+
+    Parameters
+    ----------
+    p1, p2, p3, p4 : np.ndarray
+        Shape ``(N, 3)`` marker trajectories in the global frame.
+
+    Returns
+    -------
+    rep_p1, rep_p2, rep_p3, rep_p4 : np.ndarray
+        Shape ``(N, 3)`` smoothed marker trajectories.
+    """
     n = p1.shape[0]
 
     # Buffers for local coordinates (p1 in system 234, p2 in 341, p3 in 412, p4 in 123)
