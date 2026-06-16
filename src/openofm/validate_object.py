@@ -1,8 +1,6 @@
 import os
-from .dynamic import openOFM_dynamic
-from .static import openOFM_static
-from .utils.utils import find_repo_root, c3d_to_dict, make_plot_title, get_nrmse
-from .plotting.plotting import plot_angles
+from utils.utils import find_repo_root, c3d_to_dict, make_plot_title, get_nrmse
+from plotting.plotting import plot_angles
 
 # global settings
 validation_dir = 'Data_Validate'
@@ -12,44 +10,54 @@ static_trial_processed = 'static_processed.c3d'
 dynamic_trial_processed = 'dynamic_processed.c3d'
 
 
-from openofm import openOFM
-from utils.utils import fetch_dataset
+def ofm_validate():
+    """script to demonstrate validation of open OFM against Vicon processed data"""
+
+    # general settings for all validation trials
+    settings = dict(nexus=False)        # nexus is always set to False in order to validate the python code
+    settings['version'] = '1.0'        # set version of ofm model (use only 1.0 to replicate against Vicon)
+    settings['use_settings'] = False   # looks for settings in .c3d file
+
+    # get path to validation c3d files
+    ROOT_DIR = find_repo_root(os.path.dirname(__file__))
+    DATA_DIR = os.path.join(ROOT_DIR, validation_dir)
+
+    for subject in os.listdir(DATA_DIR):
+        settings['data_dir'] = os.path.join(validation_dir, subject)  # relative to root
+        print('validating openOFM using raw and processed data in folder {}'.format(settings['data_dir']))
+
+        # get path to validation files
+        fl_static_processed = os.path.join(ROOT_DIR, settings['data_dir'], static_trial_processed)
+        fl_dynamic_processed = os.path.join(ROOT_DIR, settings['data_dir'], dynamic_trial_processed)
+
+        # load c3d files to dictionary
+        sdata_processed = c3d_to_dict(fl_static_processed)
+        data_processed = c3d_to_dict(fl_dynamic_processed)
+
+        # update settings to include parameters computed by OFM pipeline
+        settings.update(get_validation_settings(sdata_processed, settings))
+
+        # run openOFM static
+        settings['trial_type'] = 'static'
+        settings['file_name'] = static_trial
+        _ = openOFM_static(settings=settings)
+
+        # run openOFM dynamic
+        settings['trial_type'] = 'dynamic'
+        settings['file_name'] = dynamic_trial
+        settings['make_plot'] = False
+        data = openOFM_dynamic(settings=settings)
+
+        # compute normalized root mean squared error between vicon generated OFM and openOFM
+        data = get_nrmse(data, data_processed)
+
+        # compare angles between vicon generated OFM and openOFM
+        plot_title = make_plot_title(settings)
+        plot_angles(data=data, vicon_data=data_processed, plot_title=plot_title)
 
 
-# initialize openOFM object with version 1.0
-ofm = openOFM(version='1.0')
-
-
-# fetch validation data (downloads from github if not on local machine)
-data_dir = fetch_dataset(name='Data_Validate')
-
-# Run validation code
-settings = dict(nexus=False)        # nexus is always set to False in order to validate the python code
-settings['use_settings'] = False    # looks for settings in .c3d file
-
-ofm.validate(data_dir)
-ofm.plot_angles()
-
-
-
-
-def get_validation_settings(sdata_processed: dict, settings: dict) -> dict:
-    """Populate settings with parameter values from the Vicon OFM pipeline.
-
-    Parameters
-    ----------
-    sdata_processed : dict
-        Static trial data pre-processed by Vicon, containing a
-        ``parameters['PROCESSING']`` block with subject measurements.
-    settings : dict
-        Existing settings dictionary to extend.
-
-    Returns
-    -------
-    dict
-        Extended settings dictionary with ``'parameters'`` and
-        ``'processing'`` sub-dicts populated.
-    """
+def get_validation_settings(sdata_processed, settings):
+    """ populates settings parameters with values computed by Vicon OFM pipleline for validation"""
     params = sdata_processed['parameters']['PROCESSING']
     settings['parameters'] = {}
     settings['parameters']['MarkerDiameter'] = int(params['MarkerDiameter']['value'][0])
@@ -74,9 +82,5 @@ def get_validation_settings(sdata_processed: dict, settings: dict) -> dict:
     return settings
 
 
-# def main() -> None:
-#     """Entry point for the ``openofm-validate`` command."""
-#     ofm_validate()
-
-#
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    ofm_validate()

@@ -1,12 +1,10 @@
 import os
 from typing import Any
-from pathlib import Path
-import urllib.request
 import numpy as np
 import requests
 from pathlib import Path
 
-from ..linear_algebra.linear_algebra import nrmse
+from openofm.linear_algebra.linear_algebra import nrmse
 
 
 API_BASE = "https://api.github.com/repos/mcgillmotionlab/openOFM/contents"
