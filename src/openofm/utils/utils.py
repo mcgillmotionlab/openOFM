@@ -4,7 +4,7 @@ import numpy as np
 import requests
 from pathlib import Path
 
-from openofm.core.linear_algebra import nrmse
+from .core.linear_algebra import nrmse
 
 
 API_BASE = "https://api.github.com/repos/mcgillmotionlab/openOFM/contents"
@@ -89,34 +89,46 @@ def extract_value(v: Any) -> Any:
         return v['value']
     return v
 
-def find_repo_root(
-    test: str,
-    dirs: tuple[str, ...] = (".git",),
-    default: str | None = None,
-) -> str:
-    """Find the full local path to the root of the code repository.
+def find_repo_root(path, marker="README.md"):
+    """
+    Find the nearest parent directory containing the specified marker file.
 
     Parameters
     ----------
-    test : str
-        Starting path for the upward search.
-    dirs : tuple of str, optional
-        Marker directory names that identify the repo root (default ``('.git',)``).
-    default : str or None, optional
-        Fallback path when no marker is found.  Defaults to two levels above
-        this file.
+    path : str
+        Starting file or directory.
+    marker : str, optional
+        File used to identify the repository root. Default README.md
 
     Returns
     -------
     str
         Absolute path to the repository root.
+
+    Raises
+    ------
+    RuntimeError
+        If the marker cannot be found.
     """
-    prev, test = None, os.path.abspath(test)
-    while prev != test:
-        if any(os.path.isdir(os.path.join(test, d)) for d in dirs):
-            return test
-        prev, test = test, os.path.abspath(os.path.join(test, os.pardir))
-    return default or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    path = os.path.abspath(path)
+
+    if os.path.isfile(path):
+        path = os.path.dirname(path)
+
+    while True:
+
+        if os.path.isfile(os.path.join(path, marker)):
+            return path
+
+        parent = os.path.dirname(path)
+
+        if parent == path:
+            raise RuntimeError(
+                "Could not locate repository root containing '{}'".format(marker)
+            )
+
+        path = parent
 
 
 def c3d_to_dict(fl: str, verbose: bool = False) -> dict:
