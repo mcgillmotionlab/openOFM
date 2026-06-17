@@ -1,7 +1,7 @@
 import numpy as np
 
 from openofm.core.linear_algebra import makeunit, angle
-from ..utils.utils import addchannelsgs, getDir
+from src.openofm.core.utils import addchannelsgs, getDir
 
 
 def kinematics(data: dict, r: dict, jnt: list, version: str) -> dict:
