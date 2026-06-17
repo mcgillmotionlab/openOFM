@@ -1,4 +1,4 @@
-from core.virtual_markers import create_virtual_markers
+from openofm.core.virtual_markers import create_virtual_markers
 from core.utils import is_nexus, get_python_settings, get_data, set_data
 
 

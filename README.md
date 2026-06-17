@@ -66,7 +66,7 @@ Python users must set up an appropriate environment to run openOFM.
 The following steps assume the user has installed the Anaconda or Mini-
 conda python distribution and has launched a terminal (Mac OS/Linux) or
 command prompt (PC). Similar commands can be run via Python IDEs.
-1. Create environment: ``conda create --name openOFM python=3.14 -y``
+1. Create environment: ``conda create --name openOFM python=3.11 -y``
 2. Activate environment: ``conda activate openOFM``
 3. Change directory to python subdirectory of the openOFM repository:
 ``cd ...\openOFM\python``

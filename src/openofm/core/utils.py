@@ -4,7 +4,7 @@ import numpy as np
 import requests
 from pathlib import Path
 
-from .core.linear_algebra import nrmse
+from linear_algebra import nrmse
 
 
 API_BASE = "https://api.github.com/repos/mcgillmotionlab/openOFM/contents"
