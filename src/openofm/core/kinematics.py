@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..linear_algebra.linear_algebra import makeunit, angle
+from openofm.core.linear_algebra import makeunit, angle
 from ..utils.utils import addchannelsgs, getDir
 
 

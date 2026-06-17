@@ -4,7 +4,7 @@ import numpy as np
 import requests
 from pathlib import Path
 
-from openofm.linear_algebra.linear_algebra import nrmse
+from openofm.core.linear_algebra import nrmse
 
 
 API_BASE = "https://api.github.com/repos/mcgillmotionlab/openOFM/contents"
@@ -33,6 +33,30 @@ def _fetch_folder(folder, out_dir):
 
         elif item["type"] == "dir":
             _fetch_folder(f"{folder}/{item['name']}", Path(out_dir) / item["name"])
+
+
+def get_params(data):
+    """ extract parameters from a loaded c3d file"""
+    params = data['parameters']['PROCESSING']
+    parameters = {'MarkerDiameter': int(params['MarkerDiameter']['value'][0]),
+                  'InterAsisDistance': int(params['InterAsisDistance']['value'][0]),
+                  'RLegLength': int(params['RLegLength']['value'][0]),
+                  'LLegLength': int(params['LLegLength']['value'][0]),
+                  'RKneeWidth': int(params['RKneeWidth']['value'][0]),
+                  'LKneeWidth': int(params['LKneeWidth']['value'][0]),
+                  'RAnkleWidth': int(params['RAnkleWidth']['value'][0]),
+                  'LAnkleWidth': int(params['LAnkleWidth']['value'][0]),
+                  'RThighRotation': int(params['RThighRotation']['value'][0]),
+                  'LThighRotation': int(params['LThighRotation']['value'][0]),
+                  'RShankRotation': int(params['RShankRotation']['value'][0]),
+                  'LShankRotation': int(params['LShankRotation']['value'][0])}
+
+    processing = {'RHindFootFlat': int(params['RHindFootFlat']['value'][0].astype(int)),
+                  'LHindFootFlat': int(params['LHindFootFlat']['value'][0].astype(int)),
+                  'RUseFloorFF': int(params['RUseFloorFF']['value'][0].astype(int)),
+                  'LUseFloorFF': int(params['LUseFloorFF']['value'][0].astype(int))}
+
+    return parameters, processing
 
 
 def fetch_dataset(name="Data_Sample", cache_dir="~/.openofm"):

@@ -1,6 +1,9 @@
 import os
-from utils.utils import find_repo_root, c3d_to_dict, make_plot_title, get_nrmse
-from plotting.plotting import plot_angles
+from openofm.utils.utils import find_repo_root, c3d_to_dict, make_plot_title, get_nrmse
+from openofm.plotting.plotting import plot_angles
+from openofm.static import openOFM_static
+from openofm.dynamic import openOFM_dynamic
+
 
 # global settings
 validation_dir = 'Data_Validate'

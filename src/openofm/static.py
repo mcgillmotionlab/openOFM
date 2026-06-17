@@ -1,5 +1,6 @@
-from .OFM.virtual_markers import create_virtual_markers
-from .utils.utils import is_nexus, get_python_settings, get_data, set_data
+from openofm.core.virtual_markers import create_virtual_markers
+from openofm.utils.utils import is_nexus, get_python_settings, get_data, set_data
+
 
 TRIAL_TYPE = 'static'
 
@@ -23,15 +24,17 @@ def openOFM_static(settings: dict) -> tuple[dict, dict]:
 
     # 1: Access static calibration file
     if settings['nexus']:
+        from openofm.utils.utils_nexus import get_nexus_data
         sdata, settings = get_nexus_data(settings)
     else:
         sdata, _ = get_data(settings)
 
-    # 2: Create dynamic version of virtual markers present in static trial + compute phi and omega
+    # 2: Create the dynamic version of virtual markers present in static trial + compute phi and omega
     sdata, ofm_dict = create_virtual_markers(sdata, process_options=settings['processing'], version=settings['version'])
 
 
     if settings['nexus']:
+        from openofm.utils.utils_nexus import set_nexus_data
         set_nexus_data(sdata, TRIAL_TYPE)
     else:
         set_data(sdata, settings)

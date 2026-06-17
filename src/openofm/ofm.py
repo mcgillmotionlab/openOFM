@@ -4,19 +4,20 @@ from typing import Union
 
 import yaml
 
-from OFM.virtual_markers import create_virtual_markers, animate_virtual_markers
-from OFM.segments import segments
-from OFM.kinematics import kinematics
-from PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
-from plotting.plotting import plot_angles
-from utils.utils import c3d_to_dict, fetch_dataset
+from openofm.core.virtual_markers import create_virtual_markers, animate_virtual_markers
+from openofm.core.segments import segments
+from openofm.core.kinematics import kinematics
+from openofm.core.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
+from openofm.plotting.plotting import plot_angles
+from openofm.utils.utils import c3d_to_dict
+
 
 #todo: should we split stuff about collection session (e.g. marker diameter) from subject_measurements (e.g. knee width)?
 #todo: initialize with version 1.0 instead of None and raising an error?
 
 
 
-class openOFM:
+class OFM:
 
 
     DEFAULT_PROCESSING_OPTIONS = {
@@ -30,21 +31,11 @@ class openOFM:
     KJCMethod = Union[str, Callable[[dict], dict]]
     AJCMethod = Union[str, Callable[[dict], dict]]
 
-    def __init__(self, static_file: str | None = None, dynamic_file: str | None = None,
-                 subject_measurements: dict | None = None, process_options: dict | None = None,
-                 version: str | None = None,) -> None:
+    def __init__(self, version: str | None = None) -> None:
         """Initialise an openOFM processing session.
 
         Parameters
         ----------
-        static_file : str or None, optional
-            Path to the static C3D file.
-        dynamic_file : str or None, optional
-            Path to the dynamic C3D file.
-        subject_measurements : dict or None, optional
-            Subject anthropometric parameters (e.g. ankle width, knee width).
-        process_options : dict or None, optional
-            Processing flags.
         version : str or None, optional
             openOFM model version. Options 1.0 or 1.1.
         """
@@ -53,14 +44,7 @@ class openOFM:
         if version is None:
             raise ValueError("version must be specified at initialization")
 
-        # file inputs
-        self.static_file = static_file
-        self.dynamic_file = dynamic_file
-
-        self.subject_measurements = subject_measurements
-
         # configuration
-        self.process_options = process_options
         self.version=version
 
         # bookkeeping
@@ -70,53 +54,42 @@ class openOFM:
         self.static_data = None
         self.dynamic_data = None
         self.ofm_parameters = None
+        self.subject_parameters = None
+        self.process_options = None
 
+        print('initialized ofm object using version = {}'.format(self.version))
 
-    def load_static_file(self, filepath: str | None = None) -> None:
+    def load_static_data(self, filepath: str) -> None:
         """Load static trial data from a C3D file.
 
         Parameters
         ----------
-        filepath : str or None, optional
-            Path to the static C3D file.  When provided, overrides
-            ``self.static_file``.
+        filepath : str
+            Path to the static C3D file.
         """
 
-        if filepath is not None:
-            self.static_file = filepath
+        if not os.path.exists(filepath):
+            raise FileNotFoundError('Static file {} not found'.format(filepath))
 
-        if self.static_file is None:
-            raise ValueError("static file must be set before loading if not using an argument")
-
-        if not os.path.exists(self.static_file):
-            raise FileNotFoundError('Static file {} not found'.format(self.static_file))
-
-        self.static_data = c3d_to_dict(self.static_file)
+        self.static_data = c3d_to_dict(filepath)
 
 
-    def load_dynamic_file(self, filepath: str | None = None) -> None:
+    def load_dynamic_data(self, filepath: str) -> None:
         """Load dynamic trial data from a C3D file.
 
         Parameters
         ----------
-        filepath : str or None, optional
-            Path to the dynamic C3D file.  When provided, overrides
-            ``self.dynamic_file``.
+        filepath : str o
+            Path to the dynamic C3D file.
         """
 
-        if filepath is not None:
-            self.dynamic_file = filepath
+        if not os.path.exists(filepath):
+            raise FileNotFoundError('Dynamic file {} not found'.format(filepath))
 
-        if self.dynamic_file is None:
-            raise ValueError("dynamic file must be set before loading if not using an argument")
+        self.dynamic_data = c3d_to_dict(filepath)
 
-        if not os.path.exists(self.dynamic_file):
-            raise FileNotFoundError('Dynamic file {} not found'.format(self.dynamic_file))
-
-        self.dynamic_data = c3d_to_dict(self.dynamic_file)
-
-    def load_subject_measurements(self, filepath: str) -> None:
-        """Load subject anthropometric measurements from a YAML file.
+    def load_subject_parameters(self, filepath: str) -> None:
+        """Load subject related parameters from a YAML file.
 
         Parameters
         ----------
@@ -128,7 +101,7 @@ class openOFM:
             raise FileNotFoundError('File {} not found'.format(filepath))
 
         with open(filepath, 'r') as f:
-            self.subject_measurements = yaml.safe_load(f)
+            self.subject_parameters = yaml.safe_load(f)
 
 
     def process_static_trial(self, process_options: dict | None = None) -> None:
@@ -145,8 +118,8 @@ class openOFM:
         if self.static_data is None:
             raise ValueError('Static data not loaded. Call load_static_file() first.')
 
-        if self.subject_measurements is None:
-            raise ValueError('Subject measurements not loaded. Call load_subject_measurements() first.')
+        if self.subject_parameters is None:
+            raise ValueError('Subject measurements not loaded. Call load_subject_parameters() first.')
 
         if self.process_options is None:
             self.process_options = self.DEFAULT_PROCESSING_OPTIONS.copy()
@@ -218,7 +191,7 @@ class openOFM:
             raise ValueError("Unknown method '{}'. Use 'pig' or provide a callable function.".format(method)
             )
 
-    def process_dynamic_file(self) -> None:
+    def process_dynamic_trial(self) -> None:
         """Run the full dynamic processing pipeline (animate → segments → kinematics)."""
 
         self.dynamic_data = animate_virtual_markers(self.dynamic_data, self.process_options, self.ofm_parameters,

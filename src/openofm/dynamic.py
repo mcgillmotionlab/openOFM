@@ -1,9 +1,9 @@
-from .PiG.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
-from .OFM.virtual_markers import animate_virtual_markers
-from .OFM.segments import segments
-from .OFM.kinematics import kinematics
-from .utils.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
-from .plotting.plotting import plot_angles
+from openofm.core.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
+from openofm.core.virtual_markers import animate_virtual_markers
+from openofm.core.segments import segments
+from openofm.core.kinematics import kinematics
+from openofm.utils.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
+from openofm.plotting.plotting import plot_angles
 
 TRIAL_TYPE = 'dynamic'
 
@@ -68,7 +68,6 @@ def main() -> None:
 
     if nexus:
         import sys
-        from .utils.utils_nexus import set_nexus_data, get_nexus_data
 
         settings_params['nexus'] = nexus
         settings_params['version'] = sys.argv[1]

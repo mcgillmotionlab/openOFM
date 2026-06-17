@@ -97,7 +97,7 @@ with placeholder values in the settings.
 
 ### Installing a dev environment
 
-- conda create -n openOFM-dev python=3.14
+- conda create -n openOFM-dev python=3.11
 - conda activate openOFM-dev
 - cd openOFM root folder of the repository
 - install the dev dependencies from the pyoproject.toml file: ``pip install -e ".[dev]"``
