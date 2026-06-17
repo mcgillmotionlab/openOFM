@@ -1,7 +1,7 @@
 import numpy as np
 
-from openofm.core.linear_algebra import create_lcs, magnitude, pointonline, point_to_plane
-from openofm.core.pig import getbones_data
+from .linear_algebra import create_lcs, magnitude, pointonline, point_to_plane
+from .pig import getbones_data
 
 
 def segments(

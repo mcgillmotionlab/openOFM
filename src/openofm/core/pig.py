@@ -1,6 +1,6 @@
 import numpy as np
 
-from openofm.core.linear_algebra import makeunit, gunit, ctransform, create_lcs, rotate_axes, magnitude
+from .linear_algebra import makeunit, gunit, ctransform, create_lcs, rotate_axes, magnitude
 
 
 def hipjointcentrePiG(data: dict | None = None) -> dict:

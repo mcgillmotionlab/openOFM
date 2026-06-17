@@ -1,7 +1,7 @@
 import numpy as np
 
-from linear_algebra import static2dynamic, create_lcs, point_to_plane, replace4, move_marker_gcs_2_lcs, magnitude
-from utils import getDirStat, set_params, extract_value
+from .linear_algebra import static2dynamic, create_lcs, point_to_plane, replace4, move_marker_gcs_2_lcs, magnitude
+from .utils import getDirStat, set_params, extract_value
 
 
 def create_virtual_markers(sdata: dict, process_parameters: dict, version: str) -> tuple[dict, dict]:

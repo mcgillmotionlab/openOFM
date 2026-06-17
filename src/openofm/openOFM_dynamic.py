@@ -1,9 +1,9 @@
-from openofm.core.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
-from openofm.core.virtual_markers import animate_virtual_markers
-from openofm.core.segments import segments
-from openofm.core.kinematics import kinematics
-from openofm.utils.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
-from openofm.plotting.plotting import plot_angles
+from core.pig import hipjointcentrePiG, kneejointcenterPiG, anklejointcenterPiG
+from core.virtual_markers import animate_virtual_markers
+from core.segments import segments
+from core.kinematics import kinematics
+from core.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
+from core.plotting import plot_angles
 
 TRIAL_TYPE = 'dynamic'
 

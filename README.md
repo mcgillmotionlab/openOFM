@@ -24,10 +24,6 @@ openOFM is now on pypi.org, install in your environment/version of choice:
 - Upgrade your installation to the latest version ``pip install --upgrade openofm``
 
 
-
-
-
-
 ## Running the openOFM Python scripts
 Users may run the Python scripts using two main approaches.
 First, users may run the ``openOFM_static.py`` and ``openOFM_dynamic.py``
@@ -61,19 +57,6 @@ An additional ``openOFM_validate.py`` script compares openOFM python
 Running this script will display OFM kinematics for both implementations.
 
 
-### Environment setup
-Python users must set up an appropriate environment to run openOFM.
-The following steps assume the user has installed the Anaconda or Mini-
-conda python distribution and has launched a terminal (Mac OS/Linux) or
-command prompt (PC). Similar commands can be run via Python IDEs.
-1. Create environment: ``conda create --name openOFM python=3.11 -y``
-2. Activate environment: ``conda activate openOFM``
-3. Change directory to python subdirectory of the openOFM repository:
-``cd ...\openOFM\python``
-4. Install packages: ``conda install --y --file requirements.txt``
-5. If the ezc3d package does not install, add conda-forge to channels before
-trying step 4 again: ``conda config --add channels conda-forge``
-
 ## Running in Matlab
 
 Although officially unsupported, the openOFM is available for use in
@@ -97,10 +80,10 @@ with placeholder values in the settings.
 
 ### Installing a dev environment
 
-- conda create -n openOFM-dev python=3.11
-- conda activate openOFM-dev
-- cd openOFM root folder of the repository
-- install the dev dependencies from the pyoproject.toml file: ``pip install -e ".[dev]"``
+conda create -n openofm-dev python=3.11 -y
+conda activate openofm-dev
+cd to root folder of the repository
+install the dev dependencies from the pyoproject.toml file: ``pip install -e ".[dev]"``
 
 
 ## Citation
