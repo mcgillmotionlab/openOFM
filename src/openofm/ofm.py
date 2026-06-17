@@ -1,7 +1,7 @@
 import os
 from collections.abc import Callable
 from typing import Union
-
+import warnings
 import yaml
 
 from openofm.core.virtual_markers import create_virtual_markers, animate_virtual_markers
@@ -55,7 +55,7 @@ class OFM:
         self.dynamic_data = None
         self.ofm_parameters = None
         self.subject_parameters = None
-        self.process_options = None
+        self.process_parameters = None
 
         print('initialized ofm object using version = {}'.format(self.version))
 
@@ -103,16 +103,25 @@ class OFM:
         with open(filepath, 'r') as f:
             self.subject_parameters = yaml.safe_load(f)
 
-
-    def process_static_trial(self, process_options: dict | None = None) -> None:
-        """Run the static calibration pipeline to compute virtual markers.
+    def load_processing_parameters(self, filepath: str) -> None:
+        """Load processing related parameters from a YAML file.
 
         Parameters
         ----------
-        process_options : dict or None, optional
-            Processing flags.  Falls back to
-            :attr:`DEFAULT_PROCESSING_OPTIONS` when ``None``.
+        filepath : str
+            Path to ``subject_measurements.yml``.
         """
+
+        if not os.path.exists(filepath):
+            raise FileNotFoundError('File {} not found'.format(filepath))
+
+        with open(filepath, 'r') as f:
+            self.process_parameters = yaml.safe_load(f)
+
+
+    def process_static_trial(self) -> None:
+        """Run the static calibration pipeline to compute virtual markers."""
+
 
 
         if self.static_data is None:
@@ -121,12 +130,12 @@ class OFM:
         if self.subject_parameters is None:
             raise ValueError('Subject measurements not loaded. Call load_subject_parameters() first.')
 
-        if self.process_options is None:
-            self.process_options = self.DEFAULT_PROCESSING_OPTIONS.copy()
-        else:
-            self.process_options = process_options
+        if self.process_parameters is None:
+            warnings.warn('Using default processing parameters ')
+            self.process_parameters = self.DEFAULT_PROCESSING_OPTIONS.copy()
 
-        self.static_data, self.ofm_parameters = create_virtual_markers(self.static_data, self.process_options, self.version)
+        self.static_data, self.ofm_parameters = create_virtual_markers(self.static_data, self.process_parameters,
+                                                                       self.version)
 
     def compute_hip_joint_center(self, method: HJCMethod = 'pig') -> None:
         """Compute the hip joint centre and store it in ``self.static_data``.

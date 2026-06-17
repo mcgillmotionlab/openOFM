@@ -6,4 +6,4 @@ def test_import_openofm():
 
 
 def test_import_submodules():
-    from openofm import static, dynamic, validate_old  # noqa: F401
+    from openofm import static, dynamic, validate  # noqa: F401

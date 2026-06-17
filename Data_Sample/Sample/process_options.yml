@@ -1,7 +1,6 @@
 # settings to run a subject
 # todo: update yaml
-processing:
-  LHindFootFlat: False
-  RHindFootFlat: False
-  LUseFloorFF: False
-  RUseFloorFF: False
+LHindFootFlat: False
+RHindFootFlat: False
+LUseFloorFF: False
+RUseFloorFF: False

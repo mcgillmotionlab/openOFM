@@ -4,18 +4,14 @@ from openofm.core.linear_algebra import static2dynamic, create_lcs, point_to_pla
 from openofm.utils.utils import getDirStat, set_params, extract_value
 
 
-def create_virtual_markers(
-    sdata: dict,
-    process_options: dict,
-    version: str,
-) -> tuple[dict, dict]:
+def create_virtual_markers(sdata: dict, process_parameters: dict, version: str) -> tuple[dict, dict]:
     """Compute virtual markers from a static calibration trial.
 
     Parameters
     ----------
     sdata : dict
         Static trial data dictionary (marker arrays + ``parameters`` block).
-    process_options : dict
+    process_parameters : dict
         Processing flags, e.g. ``'RUseFloorFF'``, ``'LHindFootFlat'``.
     version : str
         openOFM model version, e.g. ``'1.0'`` or ``'1.1'``.
@@ -33,11 +29,11 @@ def create_virtual_markers(
         # Determine whether to use HE1 or HEE marker for the hindfoot
         if side + 'HE1' in sdata:
             HE1_sta = sdata[side + 'HE1']
-            process_options['Has' + side + 'HE1'] = True
+            process_parameters['Has' + side + 'HE1'] = True
         else:
             HEE_sta = sdata[side + 'HEE']
             HE1_sta = HEE_sta
-            process_options['Has' + side + 'HE1'] = False
+            process_parameters['Has' + side + 'HE1'] = False
 
         HE0_sta = HE1_sta
 
@@ -58,7 +54,7 @@ def create_virtual_markers(
         O_sta, A_sta, L_sta, P_sta, _ = create_lcs(P1M_sta, P1M_sta - D5M_sta, TOE_sta - P5M_sta, 'xyz')
 
         # create forefoot virtual markers from static trial
-        if process_options[side + 'UseFloorFF']:
+        if process_parameters[side + 'UseFloorFF']:
             D1M0 = np.column_stack((D1M_sta[:, 0], D1M_sta[:, 1], P5M_sta[:, 2]))
             D5M0 = np.column_stack((D5M_sta[:, 0], D5M_sta[:, 1], P5M_sta[:, 2]))
         else:
@@ -107,7 +103,7 @@ def create_virtual_markers(
         projP5M = point_to_plane(P5M_sta, HE0_sta, PCA_sta, midcal)
 
         # adjust HFPlantar depending if flat or not flat foot
-        if process_options[side + 'HindFootFlat']:
+        if process_parameters[side + 'HindFootFlat']:
 
             if version == '1.0':
                 HFPlantar = np.vstack((projP5M[:, 0], projP5M[:, 1], HE0_sta[:, 2])).T
@@ -129,7 +125,7 @@ def create_virtual_markers(
 
         else:
             HFPlantar = projP5M
-            if not process_options['Has' + side + 'HE1']:
+            if not process_parameters['Has' + side + 'HE1']:
                 HE1_sta = (HEE_sta + PCA0) / 2
                 sdata[side + 'HEE'] = HEE_sta  # true HEE marker shift
                 sdata[side + 'HE1'] = HE1_sta  # saved HE1, which is OG HEE

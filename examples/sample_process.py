@@ -33,7 +33,8 @@ def main():
     settings.update(get_python_settings(settings))  # get processing settings and subject parameters from .yml
 
     # 4: Create local version of virtual markers present in static trial + add them to dynamic trial
-    sdata, ofm_dict = create_virtual_markers(sdata, process_options=settings['processing'], version=settings['version'])
+    sdata, ofm_dict = create_virtual_markers(sdata, process_parameters=settings['processing'],
+                                             version=settings['version'])
 
     # 5:compute hip, knee and ankle joint center (here we use PIG versions)
     data = hipjointcentrePiG(data)

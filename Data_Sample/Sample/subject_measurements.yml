@@ -1,15 +1,14 @@
 # settings to run a subject
 
-subject_params:
-  MarkerDiameter: 10        # mm
-  InterAsisDistance: 200    # mm
-  RLegLength: 1000          # mm
-  LLegLength: 1000          # mm
-  RKneeWidth: 50            # mm
-  LKneeWidth: 50            # mm
-  RAnkleWidth: 20           # mm
-  LAnkleWidth: 20           # mm
-  RThighRotation: 0         # deg
-  LThighRotation: 0         # deg
-  RShankRotation: 0         # deg
-  LShankRotation: 0         # deg
+MarkerDiameter: 10        # mm
+InterAsisDistance: 200    # mm
+RLegLength: 1000          # mm
+LLegLength: 1000          # mm
+RKneeWidth: 50            # mm
+LKneeWidth: 50            # mm
+RAnkleWidth: 20           # mm
+LAnkleWidth: 20           # mm
+RThighRotation: 0         # deg
+LThighRotation: 0         # deg
+RShankRotation: 0         # deg
+LShankRotation: 0         # deg
