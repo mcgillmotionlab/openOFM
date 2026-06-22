@@ -174,23 +174,19 @@ def makeunit(vec: np.ndarray) -> np.ndarray:
 
 
 def magnitude(r: np.ndarray, axis: int = 1) -> np.ndarray:
-    """Compute the Euclidean magnitude along a given axis.
-
-    Parameters
-    ----------
-    r : np.ndarray
-        Shape ``(N, 3)`` or ``(N,)`` signal.
-    axis : int, optional
-        Axis along which the norm is computed.  Default ``1`` gives per-row
-        magnitudes for an ``(N, 3)`` signal.
-
-    Returns
-    -------
-    np.ndarray
-        Magnitude array.
     """
-    return np.linalg.norm(r, axis=axis)
+    Compute Euclidean magnitude of 3D vectors.
 
+    Assumes biomechanical data is stored as:
+    - (N, 3) time series
+    - (3,) single vector
+    """
+    r = np.asarray(r, dtype=float)
+
+    if r.ndim == 1:
+        return np.sqrt(np.sum(r * r))
+
+    return np.sqrt(np.sum(r * r, axis=axis))
 
 def gunit() -> np.ndarray:
     """Return the 3x3 identity matrix (global coordinate system).

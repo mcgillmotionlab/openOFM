@@ -191,7 +191,7 @@ def c3d_to_dict(fl: str, verbose: bool = False) -> dict:
     return data
 
 
-def set_params(side: str, marker_lcl_av: np.ndarray, data: dict, marker: str) -> None:
+def set_params(side: str, marker_lcl_av: np.ndarray, data: dict, marker: str) -> dict:
     """Store averaged local-coordinate virtual-marker position in the C3D parameter dict.
 
     Parameters
@@ -201,15 +201,21 @@ def set_params(side: str, marker_lcl_av: np.ndarray, data: dict, marker: str) ->
     marker_lcl_av : np.ndarray
         Shape ``(1, 3)`` array with the averaged X, Y, Z local coordinates.
     data : dict
-        Trial data dictionary whose ``parameters['PROCESSING']`` block is updated
-        in-place.
+        Trial data dictionary
     marker : str
         Marker name suffix, e.g. ``'D1M0'`` → keys ``'%RD1M0X_openOFM'`` …
+
+    Returns
+    -------
+    dict
+        Updated *data* dictionary.
     """
+
     data['parameters']['PROCESSING']['%' + side + marker + 'X_openOFM'] = marker_lcl_av[0, 0]
     data['parameters']['PROCESSING']['%' + side + marker + 'Y_openOFM'] = marker_lcl_av[0, 1]
     data['parameters']['PROCESSING']['%' + side + marker + 'Z_openOFM'] = marker_lcl_av[0, 2]
 
+    return data
 
 def addchannelsgs(data: dict, KIN: dict) -> dict:
     """Add all computed kinematic channels to the trial data dictionary.
@@ -455,7 +461,7 @@ def get_data(settings: dict) -> tuple[dict, dict]:
     return data, settings
 
 
-def set_data(data: dict, settings: dict) -> None:
+def set_data(data: dict, data_dir: str) -> None:
     """Write openOFM processing parameters to ``parameters.txt``.
 
     Parameters
@@ -463,12 +469,12 @@ def set_data(data: dict, settings: dict) -> None:
     data : dict
         Trial data dictionary whose ``parameters['PROCESSING']`` block
         contains the openOFM parameters to persist.
-    settings : dict
-        Processing settings.  Required key: ``'data_dir'``.
+    data_dir : str
+        Path to the data directory.
     """
     # 1.0 get path to c3d files
     ROOT_DIR = find_repo_root(os.path.dirname(__file__))
-    DATA_DIR = os.path.join(ROOT_DIR, settings['data_dir'])
+    DATA_DIR = os.path.join(ROOT_DIR, data_dir)
 
     # create new dictionary with only openOFM processing parameters
     filtered_dict = dict(filter(lambda item: 'openOFM' in item[0], data['parameters']['PROCESSING'].items()))

@@ -1,9 +1,8 @@
-import os
 import numpy as np
-from viconnexusapi import ViconNexus
 
 
 def get_nexus_data(settings: dict) -> tuple[dict, dict]:
+    from viconnexusapi import ViconNexus
     """Load the active Vicon Nexus trial into a data dictionary.
 
     Parameters

@@ -414,7 +414,7 @@ def chordPiG(a, b, c, delta):
     # v3 is cross vector of v1, v2, and then it normalized.
     v3 = makeunit(np.cross(v1, v2))
     m = (b + c) / 2
-    len_ = magnitude(b-m, axis=1)
+    len_ = magnitude(b - m, axis=1)
     theta = np.arccos(delta / magnitude(v2, axis=1))
     csVec = np.cos(theta * 2)
     snVec = np.sin(theta * 2)
@@ -437,8 +437,9 @@ def chordPiG(a, b, c, delta):
         rot = np.array([[cs + ux ** 2 * (1 - cs), ux * uy * (1 - cs) - uz * sn, ux * uz * (1 - cs) + uy * sn],
                         [uy * ux * (1.0 - cs) + uz * sn, cs + uy ** 2 * (1 - cs), uy * uz * (1 - cs) - ux * sn],
                         [uz * ux * (1.0 - cs) - uy * sn, uz * uy * (1.0 - cs) + ux * sn, cs + uz ** 2 * (1 - cs)]])
-        r = np.matmul(rot, v2[i, :].reshape((v2[i, :].shape[0], 1)))
-        r *= len_[i]/(magnitude(r.T, axis=1))
+        # r = np.matmul(rot, v2[i, :].reshape((v2[i, :].shape[0], 1)))
+        r= np.matmul(rot, v2[i, :]).flatten()
+        r *= len_[i]/(magnitude(r.T))
         for j in np.arange(jc.shape[1]):
             jc[i, j] = r[j] + m[i, j]
     return jc

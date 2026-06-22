@@ -27,6 +27,7 @@ def openOFM_static(settings: dict) -> tuple[dict, dict]:
         from core.utils_nexus import get_nexus_data
         sdata, settings = get_nexus_data(settings)
     else:
+        #todo: check if settings is being modified by get_data even though it is not returned?
         sdata, _ = get_data(settings)
 
     # 2: Create the dynamic version of virtual markers present in static trial + compute phi and omega
@@ -37,7 +38,7 @@ def openOFM_static(settings: dict) -> tuple[dict, dict]:
         from core.utils_nexus import set_nexus_data
         set_nexus_data(sdata, TRIAL_TYPE)
     else:
-        set_data(sdata, settings)
+        set_data(sdata, data_dir=settings['data_dir'])
 
     return sdata, ofm_dict
 

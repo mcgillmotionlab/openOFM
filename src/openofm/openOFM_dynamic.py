@@ -3,6 +3,7 @@ from core.virtual_markers import animate_virtual_markers
 from core.segments import segments
 from core.kinematics import kinematics
 from core.utils import get_data, get_python_settings, is_nexus, make_plot_title, extract_value
+from core.utils_nexus import get_nexus_data, set_nexus_data
 from core.plotting import plot_angles
 
 TRIAL_TYPE = 'dynamic'
@@ -37,7 +38,7 @@ def openOFM_dynamic(settings: dict) -> dict:
     # extract relevant ofm parameters as separate dict
     ofm_dict = {k: extract_value(v) for k, v in data['parameters']['PROCESSING'].items() if 'openOFM' in k}
 
-    # 2: Create dynamic version of virtual markers present in static trial + compute phi and omega
+    # 2: Create a dynamic version of virtual markers present in static trial + compute phi and omega
     data = animate_virtual_markers(data, process_settings=settings['processing'], ofm_parameters=ofm_dict,
                                    version=settings['version'])
 

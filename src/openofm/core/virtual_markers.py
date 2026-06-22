@@ -198,17 +198,17 @@ def create_virtual_markers(sdata: dict, process_parameters: dict, version: str) 
 
         MMA0_lcl_av = np.expand_dims(np.mean(MMA0_lcl, axis=0), axis=0)
 
-        set_params(side, D1M0_lcl_av, sdata, marker='D1M0')
-        set_params(side, D5M0_lcl_av, sdata, marker='D5M0')
+        sdata = set_params(side, D1M0_lcl_av, sdata, marker='D1M0')
+        sdata = set_params(side, D5M0_lcl_av, sdata, marker='D5M0')
 
-        set_params(side, D1Mlat_lcl_av, sdata, marker='D1Mlat')
-        set_params(side, P1Mlat_lcl_av, sdata, marker='P1Mlat')
-        set_params(side, D5Mlat_lcl_av, sdata, marker='D5Mlat')
+        sdata = set_params(side, D1Mlat_lcl_av, sdata, marker='D1Mlat')
+        sdata = set_params(side, P1Mlat_lcl_av, sdata, marker='P1Mlat')
+        sdata = set_params(side, D5Mlat_lcl_av, sdata, marker='D5Mlat')
 
-        set_params(side, PCA0_lcl_av, sdata, marker='PCA0')
-        set_params(side, HFPlantar_lcl_av, sdata, marker='HFPlantar')
+        sdata = set_params(side, PCA0_lcl_av, sdata, marker='PCA0')
+        sdata = set_params(side, HFPlantar_lcl_av, sdata, marker='HFPlantar')
 
-        set_params(side, MMA0_lcl_av, sdata, marker='MMA')
+        sdata = set_params(side, MMA0_lcl_av, sdata, marker='MMA')
 
     # extract relevant ofm parameters as separate dict
     ofm_dict = {k: extract_value(v) for k, v in sdata['parameters']['PROCESSING'].items() if 'openOFM' in k}

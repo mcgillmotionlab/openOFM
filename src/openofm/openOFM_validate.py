@@ -1,8 +1,9 @@
 import os
-from openofm.utils.utils import find_repo_root, c3d_to_dict, make_plot_title, get_nrmse
-from openofm.plotting.plotting import plot_angles
-from openofm.static import openOFM_static
-from openofm.dynamic import openOFM_dynamic
+from typing import Any
+from core.utils import find_repo_root, c3d_to_dict, make_plot_title, get_nrmse
+from core.plotting import plot_angles
+from openOFM_static import openOFM_static
+from  openOFM_dynamic import openOFM_dynamic
 
 
 # global settings
@@ -17,9 +18,7 @@ def ofm_validate():
     """script to demonstrate validation of open OFM against Vicon processed data"""
 
     # general settings for all validation trials
-    settings = dict(nexus=False)        # nexus is always set to False in order to validate the python code
-    settings['version'] = '1.0'        # set version of ofm model (use only 1.0 to replicate against Vicon)
-    settings['use_settings'] = False   # looks for settings in .c3d file
+    settings: dict[str, Any] = {'nexus': False, 'version': '1.0', 'use_settings': False}
 
     # get path to validation c3d files
     ROOT_DIR = find_repo_root(os.path.dirname(__file__))
