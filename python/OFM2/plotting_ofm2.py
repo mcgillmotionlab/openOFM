@@ -78,6 +78,7 @@ def plot_ofm2_results(results, rate=None, save_dir=None, show=True, dpi=150):
                     continue
                 for side in ("L", "R"):
                     if side in sides:
+                        print(f"Plotting {ANGLES[name]} {side}")
                         arr = sides[side]
                         x = np.arange(len(arr)) / rate if rate else np.arange(len(arr))
                         ax.plot(x, arr[:, c], lw=1.4,

@@ -2,11 +2,13 @@ import os
 from utils.utils import c3d_to_dict
 from OFM2 import OFM2
 from plotting_ofm2 import plot_ofm2_results
+from utils.utils import find_repo_root
 
-data_folder = os.path.join(os.getcwd(), 'Data_Sample', 'Sample')
-static_path = r"C:\Users\avoce\PycharmProjects\openOFM\Data_Sample\Sample\static.c3d" # os.path.abspath(os.path.join(data_folder, 'static.c3d'))
-dynamic_path = r"C:\Users\avoce\PycharmProjects\openOFM\Data_Sample\Sample\dynamic.c3d" # os.path.abspath(os.path.join(data_folder, 'dynamic.c3d'))
-save_dir = r"C:\Users\avoce\PycharmProjects\openOFM\Data_Sample\OFM2"
+DATA_DIR = os.path.join(find_repo_root(os.path.dirname(__file__)), 'Data_vers2')
+static_path = os.path.join(DATA_DIR, 'static01.c3d')  # os.path.abspath(os.path.join(data_folder, 'static.c3d'))
+dynamic_path =os.path.join(DATA_DIR, 'dynamic01.c3d') # os.path.abspath(os.path.join(data_folder, 'dynamic.c3d'))
+save_dir =DATA_DIR
+
 def main():
     static_data = c3d_to_dict(static_path)
     dynamic_data = c3d_to_dict(dynamic_path)
