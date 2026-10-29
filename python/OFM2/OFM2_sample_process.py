@@ -13,7 +13,7 @@ def main():
 
     ofm = OFM2.from_dict(static_data)
     ofm.run_dict(static_data, static=True)
-    results = ofm.run_dict(dynamic_data)  # reuses the stored PARAMs
+    results = ofm.run_dict(dynamic_data) 
     trial_plus = {**dynamic_data, **results}
 
     plots = plot_ofm2_results(results, save_dir=save_dir)
