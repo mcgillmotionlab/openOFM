@@ -55,6 +55,7 @@ if __name__ == "__main__":
 
         settings_params['nexus'] = nexus
         settings_params['version'] = sys.argv[1]
+        settings_params['make_plot'] = False
     else:
         import argparse
 
